@@ -1,0 +1,79 @@
+name: CupClash
+options:
+  bundleIdPrefix: com.bradleyvirtualsolutions
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "15.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: 4SQJ3AH62S
+    CODE_SIGN_STYLE: Automatic
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+targets:
+  CupClash:
+    type: application
+    platform: iOS
+    sources:
+      - path: CupClash
+        excludes:
+          - "**/.DS_Store"
+          - "**/Audio/README.md"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.bradleyvirtualsolutions.cupclash
+        PRODUCT_NAME: CupClash
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: CupClash/Resources/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Cup Clash
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.arcade-games
+        INFOPLIST_KEY_NSHumanReadableCopyright: Created by Ronell Bradley. Property of Bradley Virtual Solutions, LLC.
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIRequiresFullScreen: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SWIFT_STRICT_CONCURRENCY: complete
+        ENABLE_PREVIEWS: YES
+        CODE_SIGN_ENTITLEMENTS: CupClash/Resources/CupClash.entitlements
+        SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
+    scheme:
+      testTargets:
+        - CupClashTests
+    dependencies:
+      - sdk: RealityKit.framework
+      - sdk: ARKit.framework
+      - sdk: AVFoundation.framework
+      - sdk: GameKit.framework
+      - sdk: CoreHaptics.framework
+      - sdk: SwiftData.framework
+      - sdk: Combine.framework
+  CupClashTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - CupClashTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.bradleyvirtualsolutions.cupclash.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/CupClash.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CupClash"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        SWIFT_STRICT_CONCURRENCY: complete
+    dependencies:
+      - target: CupClash
+schemes:
+  CupClash:
+    build:
+      targets:
+        CupClash: all
+        CupClashTests: [test]
+    test:
+      targets:
+        - CupClashTests

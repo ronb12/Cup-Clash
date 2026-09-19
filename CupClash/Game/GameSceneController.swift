@@ -155,7 +155,7 @@ final class GameSceneController {
         resetBall(for: side)
     }
 
-    func updateAim(aim: Float, power: Float, showTrajectory: Bool, reducedMotion: Bool, snapToCups: Bool) {
+    func updateAim(aim: Float, power: Float, showTrajectory: Bool, reducedMotion: Bool, snapToCups: Bool, onTargetCue: Bool = false) {
         guard let ball, !ballInFlight else { return }
         let origin = AIPlayerController.throwOrigin(for: activeSide)
         ball.position = origin + SIMD3(aim * 0.04, 0, 0)
@@ -188,7 +188,7 @@ final class GameSceneController {
             gravity: physics.gravity,
             reduced: reducedMotion
         )
-        renderTrajectory(samples, power: power, onTarget: onTarget)
+        renderTrajectory(samples, power: power, onTarget: onTarget && onTargetCue)
     }
 
     func launch(aim: Float, power: Float, snapToCups: Bool) {

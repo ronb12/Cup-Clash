@@ -39,6 +39,9 @@ extension MatchConfiguration {
         AimAssistPolicy.isAllowed(mode: mode, difficulty: difficulty, lockedOff: lockAimAssistOff)
     }
 
+    /// The green "on target" guide colour is a scoring hint, so it follows the assist rule.
+    var showsOnTargetCue: Bool { aimAssistAllowed }
+
     /// True only when the player asked for assist and the rules allow it.
     var aimAssistActive: Bool { aimAssistAllowed && aimAssistance }
 }

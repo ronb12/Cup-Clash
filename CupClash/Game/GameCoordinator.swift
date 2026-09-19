@@ -248,7 +248,8 @@ final class GameCoordinator {
             power: launchPower(stored: throwInput.power, fallback: 0.55),
             showTrajectory: settings.trajectoryGuideEnabled,
             reducedMotion: settings.reducedMotion,
-            snapToCups: aimAssistEnabled
+            snapToCups: aimAssistEnabled,
+            onTargetCue: configuration.showsOnTargetCue
         )
     }
 

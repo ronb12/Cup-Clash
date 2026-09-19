@@ -92,4 +92,11 @@ final class AimAssistPolicyTests: XCTestCase {
     func testPassAndPlayIgnoresDifficulty() {
         XCTAssertTrue(config(.passAndPlay, .champion).aimAssistActive)
     }
+
+    func testOnTargetCueOnlyOnRookieAndUnlockedModes() {
+        XCTAssertTrue(config(.quickMatch, .rookie).showsOnTargetCue)
+        XCTAssertFalse(config(.quickMatch, .pro).showsOnTargetCue)
+        XCTAssertFalse(config(.quickMatch, .champion).showsOnTargetCue)
+        XCTAssertFalse(config(.tournament, .rookie).showsOnTargetCue)
+    }
 }

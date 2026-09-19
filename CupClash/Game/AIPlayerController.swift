@@ -15,19 +15,19 @@ extension AIDifficulty {
         switch self {
         case .rookie:
             AIDifficultyParameters(
-                aimSpread: -0.18...0.18,
-                powerSpread: -0.24...0.22,
+                aimSpread: -0.05...0.05,
+                powerSpread: -0.15...0.15,
                 flightTime: 0.48...0.66,
-                missBias: 0.16,
+                missBias: 0.12,
                 bankChance: 0.06,
                 thinkTime: 0.55...1.15
             )
         case .pro:
             AIDifficultyParameters(
-                aimSpread: -0.075...0.075,
+                aimSpread: -0.03...0.03,
                 powerSpread: -0.07...0.06,
                 flightTime: 0.50...0.57,
-                missBias: 0.08,
+                missBias: 0.045,
                 bankChance: 0.18,
                 thinkTime: 0.34...0.72
             )
@@ -55,11 +55,12 @@ enum AIPlayerController {
         difficulty: AIDifficulty,
         cups: [CupData],
         throwingSide: PlayerSide,
-        physics: PhysicsConfiguration = .playable
+        physics: PhysicsConfiguration = .playable,
+        parameters: AIDifficultyParameters? = nil
     ) -> PlannedThrow? {
         let targets = cups.filter { $0.owner == throwingSide.opposite && $0.isActive }
         guard let cup = targets.randomElement() else { return nil }
-        let params = difficulty.parameters
+        let params = parameters ?? difficulty.parameters
         let origin = throwOrigin(for: throwingSide)
         var target = cup.worldPosition
         target.y = ArenaMetrics.tableSurfaceY + ArenaMetrics.cupHeight + 0.016

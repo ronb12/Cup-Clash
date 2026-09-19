@@ -35,15 +35,25 @@ struct SettingsView: View {
                                 Text("Throw sensitivity")
                                 Slider(value: $settings.throwSensitivity, in: 0.5...1.8, step: 0.1)
                             }
-                            Picker("Default difficulty", selection: $settings.preferredDifficultyRaw) {
-                                ForEach(AIDifficulty.allCases) { level in
-                                    Text(level.title).tag(level.rawValue)
+                            HStack {
+                                Text("Default difficulty")
+                                Spacer()
+                                Picker("Default difficulty", selection: $settings.preferredDifficultyRaw) {
+                                    ForEach(AIDifficulty.allCases) { level in
+                                        Text(level.title).tag(level.rawValue)
+                                    }
                                 }
+                                .pickerStyle(.menu)
                             }
-                            Picker("Default cup count", selection: $settings.preferredCupCountRaw) {
-                                ForEach(CupCount.allCases) { count in
-                                    Text(count.title).tag(count.rawValue)
+                            HStack {
+                                Text("Default cup count")
+                                Spacer()
+                                Picker("Default cup count", selection: $settings.preferredCupCountRaw) {
+                                    ForEach(CupCount.allCases) { count in
+                                        Text(count.title).tag(count.rawValue)
+                                    }
                                 }
+                                .pickerStyle(.menu)
                             }
                         }
                         .tint(CupClashTheme.cyan)

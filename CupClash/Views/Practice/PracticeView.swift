@@ -13,7 +13,7 @@ struct PracticeView: View {
         ZStack {
             ScreenBackground(highContrast: settings.highContrast)
             if let coordinator {
-                CupClashGameView(coordinator: coordinator)
+                CupClashGameView(coordinator: coordinator, bottomInset: 150)
                 VStack(spacing: 8) {
                     HStack(spacing: 8) {
                         Button {

@@ -7,6 +7,13 @@ struct CupClashGameView: View {
 
     var body: some View {
         RealityGameContainer(controller: coordinator.scene)
+            .overlay(alignment: .bottom) {
+                if bottomInset > 0 {
+                    LinearGradient(colors: [.clear, CupClashTheme.navy.opacity(0.9)], startPoint: .top, endPoint: .bottom)
+                        .frame(height: 36)
+                        .allowsHitTesting(false)
+                }
+            }
             .padding(.bottom, bottomInset)
             .ignoresSafeArea()
             .accessibilityHidden(true)

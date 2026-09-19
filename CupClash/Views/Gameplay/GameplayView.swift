@@ -15,14 +15,6 @@ struct GameplayView: View {
             if let coordinator {
                 CupClashGameView(coordinator: coordinator, bottomInset: 150)
                     .id(configuration.seed)
-                VStack(spacing: 0) {
-                    Spacer()
-                    LinearGradient(colors: [.clear, CupClashTheme.navy.opacity(0.9)], startPoint: .top, endPoint: .bottom)
-                        .frame(height: 36)
-                }
-                .padding(.bottom, 150)
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
                 GameplayHUD(
                     coordinator: coordinator,
                     onPause: coordinator.togglePause,

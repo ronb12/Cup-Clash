@@ -172,13 +172,23 @@ final class GameSceneController {
             cupTargets: scoringTargets(),
             snapToNearestCup: snapToCups
         )
+        let landing = TrajectoryCalculator.intendedLanding(
+            aim: aim,
+            power: power,
+            from: origin,
+            towardNegativeZ: activeSide == .player,
+            physics: physics,
+            cupTargets: scoringTargets(),
+            snapToNearestCup: snapToCups
+        )
+        let onTarget = TrajectoryCalculator.isOnTarget(landing: landing, cups: scoringTargets())
         let samples = TrajectoryCalculator.samples(
             origin: origin,
             velocity: velocity,
             gravity: physics.gravity,
             reduced: reducedMotion
         )
-        renderTrajectory(samples, power: power)
+        renderTrajectory(samples, power: power, onTarget: onTarget)
     }
 
     func launch(aim: Float, power: Float, snapToCups: Bool) {
@@ -244,13 +254,16 @@ final class GameSceneController {
             .map(\.worldPosition)
     }
 
+    /// Scales horizontal speed by `physics.launchCompensation` so shots land where the guide (and the AI) aim.
     private func applyVelocity(_ velocity: SIMD3<Float>, to ball: ModelEntity) {
         if var body = ball.components[PhysicsBodyComponent.self] {
             body.mode = .dynamic
             ball.components.set(body)
         }
+        let scale = physics.launchCompensation
+        let compensated = SIMD3(velocity.x * scale, velocity.y, velocity.z * scale)
         ball.components.set(PhysicsMotionComponent(
-            linearVelocity: velocity,
+            linearVelocity: compensated,
             angularVelocity: SIMD3(velocity.z * 8, 0, -velocity.x * 8)
         ))
     }
@@ -340,13 +353,16 @@ final class GameSceneController {
         }
     }
 
-    private func renderTrajectory(_ points: [SIMD3<Float>], power: Float) {
-        let tint = UIColor(
-            red: 0.1 + CGFloat(power) * 0.9,
-            green: 0.95 - CGFloat(power) * 0.35,
-            blue: 0.98 - CGFloat(power) * 0.6,
-            alpha: 0.9
-        )
+    private func renderTrajectory(_ points: [SIMD3<Float>], power: Float, onTarget: Bool) {
+        // Green means the guide is lined up with a cup; otherwise tint by power.
+        let tint = onTarget
+            ? UIColor(red: 0.25, green: 0.98, blue: 0.55, alpha: 0.95)
+            : UIColor(
+                red: 0.1 + CGFloat(power) * 0.9,
+                green: 0.95 - CGFloat(power) * 0.35,
+                blue: 0.98 - CGFloat(power) * 0.6,
+                alpha: 0.9
+            )
         var material = SimpleMaterial()
         material.color = .init(tint: tint)
         while trajectoryDots.count < points.count {

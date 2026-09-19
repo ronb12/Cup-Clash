@@ -2,6 +2,8 @@
 
 Audio is optional. `AudioManager` fails safely when a file is missing.
 
+The bundled `.wav` files are original, synthesized placeholders (no third-party audio), so the game ships with sound. Replace any of them with your own files of the same name (CAF, WAV, MP3 or M4A) and `AudioAssetsTests` will confirm they load.
+
 Place CAF, WAV, or MP3 files in this folder (or the app bundle) using these names:
 
 | Event | Filename |

@@ -52,6 +52,12 @@ enum TrajectoryCalculator {
         return points
     }
 
+    /// True when a landing point is close enough to a cup centre for the ball to drop in.
+    static func isOnTarget(landing: SIMD3<Float>, cups: [SIMD3<Float>]) -> Bool {
+        let window = ArenaMetrics.cupTopRadius - ArenaMetrics.ballRadius * 0.5
+        return cups.contains { hypotf($0.x - landing.x, $0.z - landing.z) <= window }
+    }
+
     static func defaultRack(towardNegativeZ: Bool) -> [SIMD3<Float>] {
         FormationLayout.make(.triangle, count: .six).worldPositions(ownerIsNear: !towardNegativeZ)
     }

@@ -41,4 +41,10 @@ final class MissHintTests: XCTestCase {
         let none = RewardCalculator.breakdown(configuration: config, playerWon: false, playerMakes: 0, bestStreak: 0, alreadyGranted: false)
         XCTAssertEqual(none.coins, 0)
     }
+
+    func testOnTargetOnlyWhenLandingIsInsideAMouth() {
+        XCTAssertTrue(TrajectoryCalculator.isOnTarget(landing: SIMD3(0.06, 0.9, -0.91), cups: cups))
+        XCTAssertFalse(TrajectoryCalculator.isOnTarget(landing: SIMD3(0, 0.9, -0.80), cups: cups))
+        XCTAssertFalse(TrajectoryCalculator.isOnTarget(landing: SIMD3(0.2, 0.9, -0.9), cups: cups))
+    }
 }

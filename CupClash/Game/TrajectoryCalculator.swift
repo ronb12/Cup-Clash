@@ -58,6 +58,23 @@ enum TrajectoryCalculator {
         return cups.contains { hypotf($0.x - landing.x, $0.z - landing.z) <= window }
     }
 
+    /// How far and wide a throw can reach. Measured once from the full rack so a given
+    /// power always travels the same distance, however many cups are left.
+    struct ThrowReach: Equatable, Sendable {
+        var frontZ: Float
+        var backZ: Float
+        var halfWidth: Float
+    }
+
+    static func reach(of cups: [SIMD3<Float>], towardNegativeZ: Bool) -> ThrowReach? {
+        guard !cups.isEmpty else { return nil }
+        let zs = cups.map(\.z)
+        let xs = cups.map(\.x)
+        let front = towardNegativeZ ? (zs.max() ?? 0) : (zs.min() ?? 0)
+        let back = towardNegativeZ ? (zs.min() ?? 0) : (zs.max() ?? 0)
+        return ThrowReach(frontZ: front, backZ: back, halfWidth: max(xs.map(abs).max() ?? 0.12, 0.10) + 0.028)
+    }
+
     static func defaultRack(towardNegativeZ: Bool) -> [SIMD3<Float>] {
         FormationLayout.make(.triangle, count: .six).worldPositions(ownerIsNear: !towardNegativeZ)
     }
@@ -69,14 +86,14 @@ enum TrajectoryCalculator {
         towardNegativeZ: Bool,
         physics: PhysicsConfiguration,
         cupTargets: [SIMD3<Float>],
-        snapToNearestCup: Bool
+        snapToNearestCup: Bool,
+        reach fixedReach: ThrowReach? = nil
     ) -> SIMD3<Float> {
         let cups = cupTargets.isEmpty ? defaultRack(towardNegativeZ: towardNegativeZ) : cupTargets
-        let zs = cups.map(\.z)
-        let xs = cups.map(\.x)
-        let frontZ = towardNegativeZ ? (zs.max() ?? origin.z) : (zs.min() ?? origin.z)
-        let backZ = towardNegativeZ ? (zs.min() ?? origin.z) : (zs.max() ?? origin.z)
-        let rackHalfWidth = max(xs.map(abs).max() ?? 0.12, 0.10) + 0.028
+        let derived = reach(of: cups, towardNegativeZ: towardNegativeZ)
+        let frontZ = fixedReach?.frontZ ?? derived?.frontZ ?? origin.z
+        let backZ = fixedReach?.backZ ?? derived?.backZ ?? origin.z
+        let rackHalfWidth = fixedReach?.halfWidth ?? derived?.halfWidth ?? 0.128
         let towardThrower: Float = towardNegativeZ ? 1 : -1
         let shortZ = frontZ + towardThrower * 0.12
         let longZ = backZ - towardThrower * 0.05
@@ -113,7 +130,8 @@ enum TrajectoryCalculator {
         towardNegativeZ: Bool,
         physics: PhysicsConfiguration,
         cupTargets: [SIMD3<Float>] = [],
-        snapToNearestCup: Bool = false
+        snapToNearestCup: Bool = false,
+        reach: ThrowReach? = nil
     ) -> SIMD3<Float> {
         let target = intendedLanding(
             aim: aim,
@@ -122,7 +140,8 @@ enum TrajectoryCalculator {
             towardNegativeZ: towardNegativeZ,
             physics: physics,
             cupTargets: cupTargets,
-            snapToNearestCup: snapToNearestCup
+            snapToNearestCup: snapToNearestCup,
+            reach: reach
         )
         let clampedPower = max(physics.minLaunchPower, min(physics.maximumThrowForce, power))
         let span = max(0.01, physics.maximumThrowForce - physics.minLaunchPower)

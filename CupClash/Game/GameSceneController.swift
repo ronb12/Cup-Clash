@@ -27,6 +27,8 @@ final class GameSceneController {
     private var movingTargets = false
     private var liveCups: [CupData] = []
     private var firstTableLanding: SIMD3<Float>?
+    /// Fixed reach per rack owner, taken from the full rack at setup.
+    private var reachByOwner: [PlayerSide: TrajectoryCalculator.ThrowReach] = [:]
     /// Coaching text for the most recent missed shot, if one applies.
     private(set) var lastMissHint: String?
 
@@ -74,6 +76,14 @@ final class GameSceneController {
         worldAnchor.children.forEach { child in
             if child !== camera {
                 child.removeFromParent()
+            }
+        }
+        reachByOwner = [:]
+        for owner in [PlayerSide.player, PlayerSide.opponent] {
+            let positions = cups.filter { $0.owner == owner }.map(\.worldPosition)
+            // The player throws toward -z at the opponent's rack.
+            if let reach = TrajectoryCalculator.reach(of: positions, towardNegativeZ: owner == .opponent) {
+                reachByOwner[owner] = reach
             }
         }
         trajectoryDots.removeAll()
@@ -170,7 +180,8 @@ final class GameSceneController {
             towardNegativeZ: activeSide == .player,
             physics: physics,
             cupTargets: scoringTargets(),
-            snapToNearestCup: snapToCups
+            snapToNearestCup: snapToCups,
+            reach: reachByOwner[activeSide.opposite]
         )
         let landing = TrajectoryCalculator.intendedLanding(
             aim: aim,
@@ -179,7 +190,8 @@ final class GameSceneController {
             towardNegativeZ: activeSide == .player,
             physics: physics,
             cupTargets: scoringTargets(),
-            snapToNearestCup: snapToCups
+            snapToNearestCup: snapToCups,
+            reach: reachByOwner[activeSide.opposite]
         )
         let onTarget = TrajectoryCalculator.isOnTarget(landing: landing, cups: scoringTargets())
         let samples = TrajectoryCalculator.samples(
@@ -206,7 +218,8 @@ final class GameSceneController {
             towardNegativeZ: activeSide == .player,
             physics: physics,
             cupTargets: scoringTargets(),
-            snapToNearestCup: snapToCups
+            snapToNearestCup: snapToCups,
+            reach: reachByOwner[activeSide.opposite]
         )
         applyVelocity(velocity, to: ball)
         ballInFlight = true

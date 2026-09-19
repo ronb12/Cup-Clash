@@ -100,3 +100,45 @@ final class AimAssistPolicyTests: XCTestCase {
         XCTAssertFalse(config(.tournament, .rookie).showsOnTargetCue)
     }
 }
+
+final class FixedPowerScaleTests: XCTestCase {
+    private let origin = AIPlayerController.throwOrigin(for: .player)
+    private var fullRack: [SIMD3<Float>] {
+        FormationLayout.make(.triangle, count: .six).worldPositions(ownerIsNear: false)
+    }
+
+    private func landing(power: Float, cups: [SIMD3<Float>], reach: TrajectoryCalculator.ThrowReach?) -> SIMD3<Float> {
+        TrajectoryCalculator.intendedLanding(
+            aim: 0, power: power, from: origin, towardNegativeZ: true,
+            physics: .playable, cupTargets: cups, snapToNearestCup: false, reach: reach
+        )
+    }
+
+    func testSamePowerLandsInTheSamePlaceWhateverCupsRemain() {
+        let reach = TrajectoryCalculator.reach(of: fullRack, towardNegativeZ: true)
+        let backThree = Array(fullRack.sorted { $0.z < $1.z }.prefix(3))
+        for power in stride(from: Float(0.3), through: 1.0, by: 0.1) {
+            let full = landing(power: power, cups: fullRack, reach: reach)
+            let few = landing(power: power, cups: backThree, reach: reach)
+            XCTAssertEqual(full.z, few.z, accuracy: 0.0001, "power \(power)")
+            XCTAssertEqual(full.x, few.x, accuracy: 0.0001, "power \(power)")
+        }
+    }
+
+    func testWithoutFixedReachTheScaleShiftsWithRemainingCups() {
+        let backThree = Array(fullRack.sorted { $0.z < $1.z }.prefix(3))
+        let full = landing(power: 0.5, cups: fullRack, reach: nil)
+        let few = landing(power: 0.5, cups: backThree, reach: nil)
+        XCTAssertNotEqual(full.z, few.z, accuracy: 0.01)
+    }
+
+    func testReachCoversTheWholeRack() throws {
+        let reach = try XCTUnwrap(TrajectoryCalculator.reach(of: fullRack, towardNegativeZ: true))
+        XCTAssertGreaterThan(reach.frontZ, reach.backZ) // front is nearer the +z thrower
+        for cup in fullRack {
+            XCTAssertLessThanOrEqual(cup.z, reach.frontZ + 0.0001)
+            XCTAssertGreaterThanOrEqual(cup.z, reach.backZ - 0.0001)
+            XCTAssertLessThanOrEqual(abs(cup.x), reach.halfWidth)
+        }
+    }
+}

@@ -23,7 +23,7 @@ enum TableFactory {
         surface.name = EntityNames.table
         surface.position = SIMD3(0, surfaceY - thickness / 2, 0)
         surface.collision = CollisionComponent(
-            shapes: [.generateBox(size: [width, thickness + 0.03, length])],
+            shapes: [.generateBox(size: [width, thickness, length])],
             mode: .default,
             filter: CollisionGroups.tableFilter
         )

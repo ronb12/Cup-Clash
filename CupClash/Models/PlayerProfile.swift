@@ -37,7 +37,7 @@ final class PlayerProfile {
         selectedBallStyleID: String = BallStyle.catalog[0].id,
         selectedCupStyleID: String = CupStyle.catalog[0].id,
         selectedArenaID: String = ArenaStyle.neonCourt.id,
-        unlockedItemIDs: [String] = [BallStyle.catalog[0].id, CupStyle.catalog[0].id],
+        unlockedItemIDs: [String] = [BallStyle.catalog[0].id, CupStyle.catalog[0].id, ArenaStyle.neonCourt.id],
         lastRewardMatchID: String = ""
     ) {
         self.displayName = displayName

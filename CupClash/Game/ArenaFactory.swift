@@ -11,20 +11,40 @@ enum ArenaFactory {
         floorMaterial.color = .init(tint: UIColor(red: style.floorRed, green: style.floorGreen, blue: style.floorBlue, alpha: 1))
         floorMaterial.roughness = 0.9
         let floor = ModelEntity(
-            mesh: .generatePlane(width: 8, depth: 8),
+            mesh: .generatePlane(width: 14, depth: 14),
             materials: [floorMaterial]
         )
         floor.position.y = 0
         root.addChild(floor)
 
         var wallMaterial = SimpleMaterial()
-        wallMaterial.color = .init(tint: UIColor(red: 0.05, green: 0.04, blue: 0.14, alpha: 1))
-        let back = ModelEntity(
-            mesh: .generatePlane(width: 8, height: 3.4),
-            materials: [wallMaterial]
-        )
-        back.position = SIMD3(0, 1.6, -3.2)
-        root.addChild(back)
+        wallMaterial.color = .init(tint: UIColor(red: 0.07, green: 0.06, blue: 0.19, alpha: 1))
+        wallMaterial.roughness = 1
+        func blended(_ amount: CGFloat) -> UIColor {
+            UIColor(
+                red: 0.07 + (CGFloat(style.neonRed) - 0.07) * amount,
+                green: 0.06 + (CGFloat(style.neonGreen) - 0.06) * amount,
+                blue: 0.19 + (CGFloat(style.neonBlue) - 0.19) * amount,
+                alpha: 1
+            )
+        }
+        let glow = UnlitMaterial(color: blended(0.55))
+        let dimGlow = UnlitMaterial(color: blended(0.25))
+        // One wall behind each end of the table so both players get a backdrop.
+        for side: Float in [-1, 1] {
+            let wall = Entity()
+            wall.position = SIMD3(0, 0, side * 3.2)
+            if side > 0 { wall.orientation = simd_quatf(angle: .pi, axis: [0, 1, 0]) }
+            let panel = ModelEntity(mesh: .generatePlane(width: 14, height: 7), materials: [wallMaterial])
+            panel.position = SIMD3(0, 3.2, 0)
+            wall.addChild(panel)
+            for (y, width, material) in [(0.5 as Float, 2.6 as Float, glow), (0.72, 1.8, dimGlow)] {
+                let band = ModelEntity(mesh: .generateBox(width: width, height: 0.035, depth: 0.02), materials: [material])
+                band.position = SIMD3(0, y, 0.02)
+                wall.addChild(band)
+            }
+            root.addChild(wall)
+        }
 
         var neon = SimpleMaterial()
         neon.color = .init(tint: UIColor(red: style.neonRed, green: style.neonGreen, blue: style.neonBlue, alpha: 1))

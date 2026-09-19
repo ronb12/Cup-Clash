@@ -22,12 +22,13 @@ struct PrimaryButton: View {
             }
             .frame(maxWidth: .infinity)
             .frame(minHeight: CupClashTheme.buttonHeight)
-            .foregroundStyle(gold ? CupClashTheme.navy : .white)
+            .foregroundStyle(enabled ? (gold ? CupClashTheme.navy : .white) : CupClashTheme.textSecondary)
             .background(
                 RoundedRectangle(cornerRadius: CupClashTheme.radiusM, style: .continuous)
-                    .fill(gold ? CupClashTheme.goldGradient() : CupClashTheme.neonGradient())
+                    .fill(enabled
+                          ? (gold ? AnyShapeStyle(CupClashTheme.goldGradient()) : AnyShapeStyle(CupClashTheme.neonGradient()))
+                          : AnyShapeStyle(Color.white.opacity(0.10)))
             )
-            .opacity(enabled ? 1 : 0.45)
         }
         .disabled(!enabled)
         .accessibilityLabel(title)

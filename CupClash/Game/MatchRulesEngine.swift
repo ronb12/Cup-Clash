@@ -74,10 +74,20 @@ struct MatchRulesEngine: Equatable, Sendable {
         state.lastScoredCupID = scoredID
 
         if state.configuration.mode != .practice {
-            if state.playerCupsRemaining == 0 {
-                finish(winner: .player)
-            } else if state.opponentCupsRemaining == 0 {
-                finish(winner: .opponent)
+            let sudden = state.configuration.suddenDeathMakes
+            if sudden > 0 {
+                if state.playerMakes >= sudden {
+                    finish(winner: .player)
+                } else if state.opponentMakes >= sudden {
+                    finish(winner: .opponent)
+                }
+            }
+            if !state.isFinished {
+                if state.playerCupsRemaining == 0 {
+                    finish(winner: .player)
+                } else if state.opponentCupsRemaining == 0 {
+                    finish(winner: .opponent)
+                }
             }
         }
 

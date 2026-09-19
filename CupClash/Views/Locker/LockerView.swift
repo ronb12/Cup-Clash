@@ -14,6 +14,7 @@ struct LockerView: View {
                 Picker("Category", selection: $tab) {
                     Text("Balls").tag(0)
                     Text("Cups").tag(1)
+                    Text("Arenas").tag(2)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
@@ -33,19 +34,30 @@ struct LockerView: View {
                                     unlocked: profile.isUnlocked(style.id),
                                     selected: profile.selectedBallStyleID == style.id,
                                     coins: profile.coinBalance,
-                                    onBuy: { buy(id: style.id, price: style.price, ball: true) },
+                                    onBuy: { buy(id: style.id, price: style.price, kind: .ball) },
                                     onEquip: { equip(ballID: style.id) }
                                 )
                             }
-                        } else {
+                        } else if tab == 1 {
                             ForEach(CupStyle.catalog) { style in
                                 CupStyleCard(
                                     style: style,
                                     unlocked: profile.isUnlocked(style.id),
                                     selected: profile.selectedCupStyleID == style.id,
                                     coins: profile.coinBalance,
-                                    onBuy: { buy(id: style.id, price: style.price, ball: false) },
+                                    onBuy: { buy(id: style.id, price: style.price, kind: .cup) },
                                     onEquip: { equip(cupID: style.id) }
+                                )
+                            }
+                        } else {
+                            ForEach(ArenaStyle.catalog) { style in
+                                ArenaStyleCard(
+                                    style: style,
+                                    unlocked: profile.isUnlocked(style.id) || style.price == 0,
+                                    selected: profile.selectedArenaID == style.id,
+                                    coins: profile.coinBalance,
+                                    onBuy: { buy(id: style.id, price: style.price, kind: .arena) },
+                                    onEquip: { equip(arenaID: style.id) }
                                 )
                             }
                         }
@@ -57,9 +69,19 @@ struct LockerView: View {
             .padding(.top, 12)
         }
         .navigationTitle("Locker")
+        .onAppear { unlockDefaultArena() }
     }
 
-    private func buy(id: String, price: Int, ball: Bool) {
+    private enum ItemKind { case ball, cup, arena }
+
+    private func unlockDefaultArena() {
+        if !profile.isUnlocked(ArenaStyle.neonCourt.id) {
+            profile.unlockedItemIDs.append(ArenaStyle.neonCourt.id)
+            PersistenceManager.shared.save()
+        }
+    }
+
+    private func buy(id: String, price: Int, kind: ItemKind) {
         let outcome = CosmeticStore.purchase(
             itemID: id,
             price: price,
@@ -72,8 +94,9 @@ struct LockerView: View {
                 itemID: id,
                 remainingCoins: outcome.coins,
                 unlocked: outcome.unlocked,
-                selectedBall: ball ? id : nil,
-                selectedCup: ball ? nil : id
+                selectedBall: kind == .ball ? id : nil,
+                selectedCup: kind == .cup ? id : nil,
+                selectedArena: kind == .arena ? id : nil
             )
             message = ""
             AudioManager.shared.play(.coins)
@@ -88,12 +111,15 @@ struct LockerView: View {
         }
     }
 
-    private func equip(ballID: String? = nil, cupID: String? = nil) {
+    private func equip(ballID: String? = nil, cupID: String? = nil, arenaID: String? = nil) {
         if let ballID, profile.isUnlocked(ballID) {
             profile.selectedBallStyleID = ballID
         }
         if let cupID, profile.isUnlocked(cupID) {
             profile.selectedCupStyleID = cupID
+        }
+        if let arenaID, profile.isUnlocked(arenaID) || ArenaStyle.style(id: arenaID).price == 0 {
+            profile.selectedArenaID = arenaID
         }
         PersistenceManager.shared.save()
         AudioManager.shared.play(.button)

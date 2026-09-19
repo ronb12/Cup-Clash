@@ -10,6 +10,10 @@ enum AppRoute: Hashable {
     case profile
     case settings
     case howToPlay
+    case leaderboards
+    case achievements
+    case tournaments
+    case challenges
 }
 
 @MainActor
@@ -24,6 +28,21 @@ final class AppRouter {
 
     func start(_ configuration: MatchConfiguration) {
         push(.gameplay(configuration))
+    }
+
+    /// Drops the results screen and the finished match, then starts a new game.
+    func replaceGameplay(with configuration: MatchConfiguration) {
+        let drop = min(path.count, 2)
+        if drop > 0 {
+            path.removeLast(drop)
+        }
+        start(configuration)
+    }
+
+    func rematch(_ configuration: MatchConfiguration) {
+        var next = configuration
+        next.seed = UInt64.random(in: 1...UInt64.max)
+        replaceGameplay(with: next)
     }
 
     func showResults(_ result: MatchResult) {

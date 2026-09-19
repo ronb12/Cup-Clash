@@ -1,0 +1,4 @@
+app_identifier("com.bradleyvirtualsolutions.cupclash")
+apple_id(ENV["FASTLANE_APPLE_ID"]) if ENV["FASTLANE_APPLE_ID"]
+team_id("4SQJ3AH62S")
+itc_team_id(ENV["FASTLANE_ITC_TEAM_ID"]) if ENV["FASTLANE_ITC_TEAM_ID"]

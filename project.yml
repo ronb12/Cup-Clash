@@ -25,13 +25,14 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.bradleyvirtualsolutions.cupclash
         PRODUCT_NAME: CupClash
         MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "1"
-        TARGETED_DEVICE_FAMILY: "1"
+        CURRENT_PROJECT_VERSION: "3"
+        TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_FILE: CupClash/Resources/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Cup Clash
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.arcade-games
         INFOPLIST_KEY_NSHumanReadableCopyright: Created by Ronell Bradley. Property of Bradley Virtual Solutions, LLC.
+        INFOPLIST_KEY_NSGKFriendListUsageDescription: Cup Clash uses your Game Center friends so you can send friend invites and compare tournament and challenge ranks.
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIRequiresFullScreen: YES
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES

@@ -33,7 +33,7 @@ struct BallStyleCard: View {
                 PrimaryButton(title: selected ? "Equipped" : "Equip", enabled: !selected, action: onEquip)
             } else {
                 PrimaryButton(
-                    title: coins >= style.price ? "Buy" : "Need coins",
+                    title: coins >= style.price ? "Buy" : "Need \(style.price - coins) more coins",
                     gold: style.isPremium,
                     enabled: coins >= style.price,
                     action: onBuy

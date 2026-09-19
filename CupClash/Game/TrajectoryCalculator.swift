@@ -2,6 +2,9 @@ import Foundation
 import simd
 
 enum TrajectoryCalculator {
+    /// Smaller than half of `ArenaMetrics.cupSpacing` so assist cannot cover the whole rack.
+    static let aimAssistSnapRadius: Float = 0.038
+
     static func initialVelocity(
         from origin: SIMD3<Float>,
         to target: SIMD3<Float>,
@@ -49,27 +52,76 @@ enum TrajectoryCalculator {
         return points
     }
 
+    static func defaultRack(towardNegativeZ: Bool) -> [SIMD3<Float>] {
+        FormationLayout.make(.triangle, count: .six).worldPositions(ownerIsNear: !towardNegativeZ)
+    }
+
+    static func intendedLanding(
+        aim: Float,
+        power: Float,
+        from origin: SIMD3<Float>,
+        towardNegativeZ: Bool,
+        physics: PhysicsConfiguration,
+        cupTargets: [SIMD3<Float>],
+        snapToNearestCup: Bool
+    ) -> SIMD3<Float> {
+        let cups = cupTargets.isEmpty ? defaultRack(towardNegativeZ: towardNegativeZ) : cupTargets
+        let zs = cups.map(\.z)
+        let xs = cups.map(\.x)
+        let frontZ = towardNegativeZ ? (zs.max() ?? origin.z) : (zs.min() ?? origin.z)
+        let backZ = towardNegativeZ ? (zs.min() ?? origin.z) : (zs.max() ?? origin.z)
+        let rackHalfWidth = max(xs.map(abs).max() ?? 0.12, 0.10) + 0.028
+        let towardThrower: Float = towardNegativeZ ? 1 : -1
+        let shortZ = frontZ + towardThrower * 0.12
+        let longZ = backZ - towardThrower * 0.05
+        let aimWidth = rackHalfWidth + 0.09
+
+        let clampedPower = max(physics.minLaunchPower, min(physics.maximumThrowForce, power))
+        let span = max(0.01, physics.maximumThrowForce - physics.minLaunchPower)
+        let depthT = ((clampedPower - physics.minLaunchPower) / span).clamped(to: 0...1)
+
+        var target = SIMD3<Float>(
+            aim.clamped(to: -1...1) * aimWidth,
+            ArenaMetrics.tableSurfaceY + ArenaMetrics.cupHeight + 0.016,
+            shortZ + (longZ - shortZ) * depthT
+        )
+
+        if snapToNearestCup, let nearest = cups.min(by: {
+            hypotf($0.x - target.x, $0.z - target.z) < hypotf($1.x - target.x, $1.z - target.z)
+        }) {
+            let distance = hypotf(nearest.x - target.x, nearest.z - target.z)
+            // Must be tighter than half cup spacing or every rack throw becomes a make.
+            if distance < Self.aimAssistSnapRadius {
+                let pull: Float = 0.45
+                target.x += (nearest.x - target.x) * pull
+                target.z += (nearest.z - target.z) * pull
+            }
+        }
+        return target
+    }
+
     static func throwVelocity(
         aim: Float,
         power: Float,
         from origin: SIMD3<Float>,
         towardNegativeZ: Bool,
         physics: PhysicsConfiguration,
-        aimAssistTargetX: Float?
+        cupTargets: [SIMD3<Float>] = [],
+        snapToNearestCup: Bool = false
     ) -> SIMD3<Float> {
-        let clampedPower = max(physics.minimumThrowForce, min(physics.maximumThrowForce, power))
-        let forwardSign: Float = towardNegativeZ ? -1 : 1
-        let travel = 1.05 + clampedPower * 1.05
-        var targetX = aim * physics.sideAimMultiplier * 1.15
-        if let assist = aimAssistTargetX, abs(assist - targetX) < 0.12 {
-            targetX = targetX * 0.72 + assist * 0.28
-        }
-        let target = SIMD3<Float>(
-            targetX,
-            ArenaMetrics.tableSurfaceY + ArenaMetrics.cupHeight * 0.46,
-            origin.z + forwardSign * travel
+        let target = intendedLanding(
+            aim: aim,
+            power: power,
+            from: origin,
+            towardNegativeZ: towardNegativeZ,
+            physics: physics,
+            cupTargets: cupTargets,
+            snapToNearestCup: snapToNearestCup
         )
-        let flight = 0.46 + (1 - clampedPower) * 0.10
+        let clampedPower = max(physics.minLaunchPower, min(physics.maximumThrowForce, power))
+        let span = max(0.01, physics.maximumThrowForce - physics.minLaunchPower)
+        let depthT = ((clampedPower - physics.minLaunchPower) / span).clamped(to: 0...1)
+        let flight = 0.56 + (1 - depthT) * 0.08
         return initialVelocity(from: origin, to: target, flightTime: flight, gravity: physics.gravity)
     }
 }

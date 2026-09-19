@@ -5,10 +5,11 @@ struct MatchSetupView: View {
     @Environment(AppRouter.self) private var router
     @Environment(PlayerProfile.self) private var profile
     @Environment(GameSettings.self) private var settings
-    @State private var difficulty: AIDifficulty = .pro
+    @State private var difficulty: AIDifficulty = .rookie
     @State private var cupCount: CupCount = .six
     @State private var formation: CupFormation = .triangle
     @State private var aimAssist = true
+    @State private var suddenDeath = false
 
     var body: some View {
         ZStack {
@@ -36,6 +37,14 @@ struct MatchSetupView: View {
 
                     GlassPanel {
                         FormationPicker(formation: $formation, cupCount: cupCount)
+                    }
+
+                    if mode.usesAI {
+                        GlassPanel {
+                            Toggle("Sudden Death (first to 3 cups)", isOn: $suddenDeath)
+                                .tint(CupClashTheme.violet)
+                                .font(.system(.headline, design: .rounded))
+                        }
                     }
 
                     GlassPanel {
@@ -70,7 +79,8 @@ struct MatchSetupView: View {
             playerName: mode == .passAndPlay ? "Player One" : profile.displayName,
             opponentName: mode == .passAndPlay ? "Player Two" : difficulty.title,
             movingTargets: false,
-            seed: UInt64.random(in: 1...UInt64.max)
+            seed: UInt64.random(in: 1...UInt64.max),
+            suddenDeathMakes: suddenDeath && mode.usesAI ? 3 : 0
         )
     }
 }

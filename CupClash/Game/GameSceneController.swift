@@ -25,6 +25,10 @@ final class GameSceneController {
     private var cupStyle = CupStyle.catalog[0]
     private var movingPhase: Float = 0
     private var movingTargets = false
+    private var liveCups: [CupData] = []
+    private var firstTableLanding: SIMD3<Float>?
+    /// Coaching text for the most recent missed shot, if one applies.
+    private(set) var lastMissHint: String?
 
     enum CollisionFX {
         case table
@@ -81,17 +85,19 @@ final class GameSceneController {
         worldAnchor.addChild(TableFactory.make())
         rebuildCups(cups)
         resetBall(for: .player)
-        cameraController.aiming(for: .player)
+        cameraController.snap(to: .player)
         cameraController.apply(to: camera)
     }
 
     func rebuildCups(_ cups: [CupData]) {
+        liveCups = cups
         cupEntities.values.forEach { $0.removeFromParent() }
         cupEntities = CupRackBuilder.build(cups: cups, style: cupStyle)
         cupEntities.values.forEach { worldAnchor.addChild($0) }
     }
 
     func updateCupPositions(_ cups: [CupData]) {
+        liveCups = cups
         for cup in cups {
             guard let entity = cupEntities[cup.id] else { continue }
             entity.position = cup.worldPosition
@@ -100,6 +106,9 @@ final class GameSceneController {
     }
 
     func removeCup(id: UUID, animated: Bool, reducedMotion: Bool) {
+        if let index = liveCups.firstIndex(where: { $0.id == id }) {
+            liveCups[index].isActive = false
+        }
         guard let entity = cupEntities[id] else { return }
         celebrate(at: entity.position)
         if !animated || reducedMotion {
@@ -140,10 +149,16 @@ final class GameSceneController {
         resetBall(for: side)
     }
 
-    func updateAim(aim: Float, power: Float, showTrajectory: Bool, reducedMotion: Bool, aimAssistX: Float?) {
+    func snapToSide(_ side: PlayerSide) {
+        activeSide = side
+        cameraController.snap(to: side)
+        resetBall(for: side)
+    }
+
+    func updateAim(aim: Float, power: Float, showTrajectory: Bool, reducedMotion: Bool, snapToCups: Bool) {
         guard let ball, !ballInFlight else { return }
         let origin = AIPlayerController.throwOrigin(for: activeSide)
-        ball.position = origin + SIMD3(aim * 0.08, 0, 0)
+        ball.position = origin + SIMD3(aim * 0.04, 0, 0)
         guard showTrajectory, power > 0.04 else {
             hideTrajectory()
             return
@@ -154,7 +169,8 @@ final class GameSceneController {
             from: origin,
             towardNegativeZ: activeSide == .player,
             physics: physics,
-            aimAssistTargetX: aimAssistX
+            cupTargets: scoringTargets(),
+            snapToNearestCup: snapToCups
         )
         let samples = TrajectoryCalculator.samples(
             origin: origin,
@@ -165,10 +181,12 @@ final class GameSceneController {
         renderTrajectory(samples, power: power)
     }
 
-    func launch(aim: Float, power: Float, aimAssistX: Float?) {
+    func launch(aim: Float, power: Float, snapToCups: Bool) {
         guard let ball, !ballInFlight else { return }
         ballGeneration += 1
         evaluator.beginShot(generation: ballGeneration)
+        firstTableLanding = nil
+        lastMissHint = nil
         let origin = AIPlayerController.throwOrigin(for: activeSide)
         ball.position = origin
         let velocity = TrajectoryCalculator.throwVelocity(
@@ -177,7 +195,8 @@ final class GameSceneController {
             from: origin,
             towardNegativeZ: activeSide == .player,
             physics: physics,
-            aimAssistTargetX: aimAssistX
+            cupTargets: scoringTargets(),
+            snapToNearestCup: snapToCups
         )
         applyVelocity(velocity, to: ball)
         ballInFlight = true
@@ -188,6 +207,8 @@ final class GameSceneController {
         guard let ball, !ballInFlight else { return }
         ballGeneration += 1
         evaluator.beginShot(generation: ballGeneration)
+        firstTableLanding = nil
+        lastMissHint = nil
         ball.position = planned.origin
         applyVelocity(planned.velocity, to: ball)
         ballInFlight = true
@@ -202,6 +223,26 @@ final class GameSceneController {
     }
 
     var isBallInFlight: Bool { ballInFlight }
+    var cameraIsTraveling: Bool { cameraController.isTraveling }
+
+    private func containedCupID(at position: SIMD3<Float>) -> UUID? {
+        let mouth = ArenaMetrics.cupTopRadius * 0.95
+        return liveCups.first(where: { cup in
+            guard cup.isActive else { return false }
+            let dx = position.x - cup.worldPosition.x
+            let dz = position.z - cup.worldPosition.z
+            let localY = position.y - cup.worldPosition.y
+            return hypotf(dx, dz) <= mouth
+                && localY > 0.008
+                && localY < ArenaMetrics.cupHeight + 0.028
+        })?.id
+    }
+
+    private func scoringTargets() -> [SIMD3<Float>] {
+        liveCups
+            .filter { $0.owner == activeSide.opposite && $0.isActive }
+            .map(\.worldPosition)
+    }
 
     private func applyVelocity(_ velocity: SIMD3<Float>, to ball: ModelEntity) {
         if var body = ball.components[PhysicsBodyComponent.self] {
@@ -216,21 +257,29 @@ final class GameSceneController {
 
     private func subscribe(on view: ARView) {
         let update = view.scene.subscribe(to: SceneEvents.Update.self) { [weak self] event in
-            Task { @MainActor in
+            Self.dispatchMain {
                 self?.handleUpdate(event)
             }
         }
         let began = view.scene.subscribe(to: CollisionEvents.Began.self) { [weak self] event in
-            Task { @MainActor in
+            Self.dispatchMain {
                 self?.handleCollisionBegan(event)
             }
         }
         let ended = view.scene.subscribe(to: CollisionEvents.Ended.self) { [weak self] event in
-            Task { @MainActor in
+            Self.dispatchMain {
                 self?.handleCollisionEnded(event)
             }
         }
         subscriptions = [update, began, ended]
+    }
+
+    private static func dispatchMain(_ work: @escaping @MainActor () -> Void) {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated(work)
+        } else {
+            DispatchQueue.main.async(execute: work)
+        }
     }
 
     private func handleUpdate(_ event: SceneEvents.Update) {
@@ -245,12 +294,20 @@ final class GameSceneController {
         }
 
         guard ballInFlight, !resolvedThisShot, let ball else { return }
+        if let cupID = containedCupID(at: ball.position) {
+            evaluator.enterTrigger(cupID: cupID)
+        }
         let motion = ball.components[PhysicsMotionComponent.self]
         let speed = motion?.linearVelocity.length ?? 0
         let evaluation = evaluator.evaluate(position: ball.position, speed: speed)
         if let result = evaluation.result {
             resolvedThisShot = true
             ballInFlight = false
+            lastMissHint = result == .made ? nil : MissHint.describe(
+                landing: firstTableLanding ?? ball.position,
+                cups: scoringTargets(),
+                towardNegativeZ: activeSide == .player
+            )
             onShotResolved?(result, evaluation.cupID)
         }
     }
@@ -259,6 +316,7 @@ final class GameSceneController {
         let names = [event.entityA.name, event.entityB.name]
         if names.contains(EntityNames.table) {
             evaluator.noteTableHit()
+            if firstTableLanding == nil { firstTableLanding = ball?.position }
             onCollisionFX?(.table)
         }
         if let wall = names.first(where: { $0.hasPrefix(EntityNames.wallPrefix) }) {

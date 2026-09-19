@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ProfileView: View {
+    @Environment(AppRouter.self) private var router
     @Environment(PlayerProfile.self) private var profile
     @Environment(GameSettings.self) private var settings
     @State private var name: String = ""
@@ -15,7 +16,13 @@ struct ProfileView: View {
                             Text("Display name")
                                 .font(.system(.headline, design: .rounded))
                             TextField("Player name", text: $name)
-                                .textFieldStyle(.roundedBorder)
+                                .textFieldStyle(.plain)
+                                .padding(12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(Color.white.opacity(0.08))
+                                )
+                                .foregroundStyle(CupClashTheme.textPrimary)
                                 .onSubmit { saveName() }
                             LevelProgressView(totalXP: profile.totalXP)
                             CoinBadge(amount: profile.coinBalance)
@@ -23,6 +30,18 @@ struct ProfileView: View {
                     }
                     GlassPanel {
                         StatisticsView(profile: profile)
+                    }
+                    SecondaryButton(title: "Tournaments", symbol: "trophy.fill") {
+                        router.push(.tournaments)
+                    }
+                    SecondaryButton(title: "Challenges", symbol: "flag.checkered") {
+                        router.push(.challenges)
+                    }
+                    SecondaryButton(title: "Leaderboards", symbol: "list.number") {
+                        router.push(.leaderboards)
+                    }
+                    SecondaryButton(title: "Achievements", symbol: "rosette") {
+                        router.push(.achievements)
                     }
                     SecondaryButton(title: "Save Name", symbol: "checkmark") {
                         saveName()

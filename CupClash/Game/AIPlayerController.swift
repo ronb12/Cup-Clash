@@ -18,27 +18,27 @@ extension AIDifficulty {
                 aimSpread: -0.18...0.18,
                 powerSpread: -0.24...0.22,
                 flightTime: 0.48...0.66,
-                missBias: 0.30,
+                missBias: 0.16,
                 bankChance: 0.06,
                 thinkTime: 0.55...1.15
             )
         case .pro:
             AIDifficultyParameters(
-                aimSpread: -0.09...0.09,
-                powerSpread: -0.12...0.10,
-                flightTime: 0.50...0.58,
-                missBias: 0.12,
-                bankChance: 0.22,
-                thinkTime: 0.38...0.82
+                aimSpread: -0.075...0.075,
+                powerSpread: -0.07...0.06,
+                flightTime: 0.50...0.57,
+                missBias: 0.08,
+                bankChance: 0.18,
+                thinkTime: 0.34...0.72
             )
         case .champion:
             AIDifficultyParameters(
-                aimSpread: -0.038...0.038,
-                powerSpread: -0.05...0.05,
-                flightTime: 0.50...0.55,
-                missBias: 0.05,
-                bankChance: 0.14,
-                thinkTime: 0.26...0.55
+                aimSpread: -0.022...0.022,
+                powerSpread: -0.028...0.028,
+                flightTime: 0.50...0.54,
+                missBias: 0.016,
+                bankChance: 0.10,
+                thinkTime: 0.22...0.48
             )
         }
     }
@@ -62,13 +62,13 @@ enum AIPlayerController {
         let params = difficulty.parameters
         let origin = throwOrigin(for: throwingSide)
         var target = cup.worldPosition
-        target.y = ArenaMetrics.tableSurfaceY + ArenaMetrics.cupHeight * 0.42
+        target.y = ArenaMetrics.tableSurfaceY + ArenaMetrics.cupHeight + 0.016
         target.x += Float.random(in: params.aimSpread)
-        target.z += Float.random(in: params.powerSpread) * 0.35
+        target.z += Float.random(in: params.powerSpread) * 0.18
 
         if Float.random(in: 0...1) < params.missBias {
-            target.z += throwingSide == .player ? 0.22 : -0.22
-            target.x += Float.random(in: -0.12...0.12)
+            target.z += throwingSide == .player ? 0.10 : -0.10
+            target.x += Float.random(in: -0.06...0.06)
         }
 
         if Float.random(in: 0...1) < params.bankChance {

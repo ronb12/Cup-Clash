@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(AppRouter.self) private var router
     @Environment(GameSettings.self) private var settings
     @Environment(PlayerProfile.self) private var profile
     @State private var confirmReset = false
@@ -26,6 +27,9 @@ struct SettingsView: View {
                             SectionHeader(title: "Gameplay")
                             Toggle("Trajectory guide", isOn: $settings.trajectoryGuideEnabled)
                             Toggle("Aim assistance", isOn: $settings.aimAssistanceEnabled)
+                            Text("Slight pull toward a nearby cup. Leave off for a real challenge.")
+                                .font(.footnote)
+                                .foregroundStyle(CupClashTheme.textSecondary)
                             Toggle("Left-handed controls", isOn: $settings.leftHandedControls)
                             VStack(alignment: .leading) {
                                 Text("Throw sensitivity")
@@ -64,6 +68,23 @@ struct SettingsView: View {
                                  ? "Signed in as \(GameCenterManager.shared.playerDisplayName)"
                                  : "Game Center is optional. The game works offline.")
                                 .foregroundStyle(CupClashTheme.textSecondary)
+                            SecondaryButton(title: "Leaderboards", symbol: "list.number") {
+                                router.push(.leaderboards)
+                            }
+                            SecondaryButton(title: "Achievements", symbol: "rosette") {
+                                router.push(.achievements)
+                            }
+                            if !GameCenterManager.shared.isAuthenticated {
+                                SecondaryButton(title: "Sign In to Game Center", symbol: "person.crop.circle.badge.checkmark") {
+                                    GameCenterManager.shared.authenticate()
+                                }
+                            }
+                            SecondaryButton(title: "Invite Friends", symbol: "person.crop.circle.badge.plus") {
+                                GameCenterManager.shared.presentFriendInvite()
+                            }
+                            SecondaryButton(title: "Friends", symbol: "person.2.fill") {
+                                GameCenterManager.shared.presentFriends()
+                            }
                             SecondaryButton(title: "Open Game Center", symbol: "gamecontroller") {
                                 GameCenterManager.shared.presentDashboard()
                             }

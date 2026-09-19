@@ -4,6 +4,9 @@ enum GameMode: String, CaseIterable, Codable, Identifiable, Sendable {
     case quickMatch
     case passAndPlay
     case practice
+    case dailyChallenge
+    case tournament
+    case challenge
 
     var id: String { rawValue }
 
@@ -12,6 +15,9 @@ enum GameMode: String, CaseIterable, Codable, Identifiable, Sendable {
         case .quickMatch: "Quick Match"
         case .passAndPlay: "Pass & Play"
         case .practice: "Practice"
+        case .dailyChallenge: "Daily Challenge"
+        case .tournament: "Tournament"
+        case .challenge: "Challenge"
         }
     }
 
@@ -20,6 +26,9 @@ enum GameMode: String, CaseIterable, Codable, Identifiable, Sendable {
         case .quickMatch: "Challenge a computer rival"
         case .passAndPlay: "Two players, one device"
         case .practice: "Unlimited throws and resets"
+        case .dailyChallenge: "A new seeded match every day"
+        case .tournament: "A weekly three-round cup"
+        case .challenge: "Special rules and objectives"
         }
     }
 
@@ -28,10 +37,17 @@ enum GameMode: String, CaseIterable, Codable, Identifiable, Sendable {
         case .quickMatch: "bolt.fill"
         case .passAndPlay: "person.2.fill"
         case .practice: "target"
+        case .dailyChallenge: "calendar.badge.clock"
+        case .tournament: "trophy.fill"
+        case .challenge: "flag.checkered"
         }
     }
 
-    var awardsCoins: Bool { self == .quickMatch }
+    var usesAI: Bool {
+        self == .quickMatch || self == .dailyChallenge || self == .tournament || self == .challenge
+    }
+    var awardsCoins: Bool { usesAI }
+    var isRanked: Bool { usesAI }
 }
 
 enum AIDifficulty: String, CaseIterable, Codable, Identifiable, Sendable {
@@ -76,6 +92,46 @@ struct MatchConfiguration: Hashable, Codable, Sendable {
     var opponentName: String
     var movingTargets: Bool
     var seed: UInt64
+    var suddenDeathMakes: Int
+    var eventID: String
+    var eventRound: Int
+    var eventTitle: String
+    var lockAimAssistOff: Bool
+
+    var isSuddenDeath: Bool { suddenDeathMakes > 0 }
+    var isFinalTournamentRound: Bool { mode == .tournament && eventRound >= 3 }
+
+    init(
+        mode: GameMode,
+        difficulty: AIDifficulty,
+        cupCount: CupCount,
+        formation: CupFormation,
+        aimAssistance: Bool,
+        playerName: String,
+        opponentName: String,
+        movingTargets: Bool,
+        seed: UInt64,
+        suddenDeathMakes: Int = 0,
+        eventID: String = "",
+        eventRound: Int = 0,
+        eventTitle: String = "",
+        lockAimAssistOff: Bool = false
+    ) {
+        self.mode = mode
+        self.difficulty = difficulty
+        self.cupCount = cupCount
+        self.formation = formation
+        self.aimAssistance = aimAssistance
+        self.playerName = playerName
+        self.opponentName = opponentName
+        self.movingTargets = movingTargets
+        self.seed = seed
+        self.suddenDeathMakes = suddenDeathMakes
+        self.eventID = eventID
+        self.eventRound = eventRound
+        self.eventTitle = eventTitle
+        self.lockAimAssistOff = lockAimAssistOff
+    }
 
     static func quickMatch(
         difficulty: AIDifficulty,

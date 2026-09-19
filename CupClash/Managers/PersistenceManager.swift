@@ -76,8 +76,11 @@ final class PersistenceManager {
         current.selectedBallStyleID = BallStyle.catalog[0].id
         current.selectedCupStyleID = CupStyle.catalog[0].id
         current.selectedArenaID = ArenaStyle.neonCourt.id
-        current.unlockedItemIDs = [BallStyle.catalog[0].id, CupStyle.catalog[0].id]
+        current.unlockedItemIDs = [BallStyle.catalog[0].id, CupStyle.catalog[0].id, ArenaStyle.neonCourt.id]
         current.lastRewardMatchID = ""
+        LocalScoreboard.shared.reset()
+        TournamentStore.shared.reset()
+        ChallengeStore.shared.reset()
         save()
     }
 
@@ -105,10 +108,13 @@ final class PersistenceManager {
         profile.currentXP = progress.intoLevel
         profile.coinBalance += result.rewards.totalCoins
         profile.lastRewardMatchID = result.id.uuidString
+        TournamentStore.shared.record(result: result)
+        ChallengeStore.shared.record(result: result)
+        LocalScoreboard.shared.record(result: result, playerName: profile.displayName, profile: profile)
         save()
     }
 
-    func applyPurchase(itemID: String, remainingCoins: Int, unlocked: [String], selectedBall: String?, selectedCup: String?) {
+    func applyPurchase(itemID: String, remainingCoins: Int, unlocked: [String], selectedBall: String?, selectedCup: String?, selectedArena: String? = nil) {
         let profile = profile()
         profile.coinBalance = remainingCoins
         profile.unlockedItemIDs = unlocked
@@ -117,6 +123,9 @@ final class PersistenceManager {
         }
         if let selectedCup {
             profile.selectedCupStyleID = selectedCup
+        }
+        if let selectedArena {
+            profile.selectedArenaID = selectedArena
         }
         save()
     }

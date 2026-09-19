@@ -14,8 +14,8 @@ struct PracticeView: View {
             ScreenBackground(highContrast: settings.highContrast)
             if let coordinator {
                 CupClashGameView(coordinator: coordinator)
-                VStack {
-                    HStack {
+                VStack(spacing: 8) {
+                    HStack(spacing: 8) {
                         Button {
                             coordinator.teardown()
                             router.popToHome()
@@ -36,23 +36,28 @@ struct PracticeView: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 16)
 
-                    ShotResultView(text: coordinator.feedback)
-                    Text("Power \(Int(coordinator.throwInput.power * 100))")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.white.opacity(0.8))
-                    Spacer()
-                    HStack {
-                        SecondaryButton(title: "Reset Ball", action: coordinator.resetPracticeBall)
-                        SecondaryButton(title: "Reset Cups", action: coordinator.resetPracticeCups)
+                    HStack(spacing: 8) {
+                        compactReset("Reset Ball", action: coordinator.resetPracticeBall)
+                        compactReset("Reset Cups", action: coordinator.resetPracticeCups)
+                        Spacer()
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 16)
+
+                    ShotResultView(text: coordinator.feedback)
+
+                    TableAimSurface(
+                        enabled: coordinator.canThrow,
+                        onChanged: coordinator.updateAim,
+                        onEnded: coordinator.lockAim
+                    )
+
                     AimPowerControl(
                         enabled: coordinator.canThrow,
                         leftHanded: settings.leftHandedControls,
                         aim: coordinator.throwInput.aim,
                         power: coordinator.throwInput.power,
-                        onChanged: coordinator.updateAim,
-                        onEnded: coordinator.releaseThrow
+                        onShoot: { coordinator.throwStraight() },
+                        onNudgeAim: coordinator.nudgeAim
                     )
                     .padding(.horizontal, 16)
                     .padding(.bottom, 8)
@@ -93,10 +98,21 @@ struct PracticeView: View {
                 }
             }
         }
-        .navigationTitle("Practice")
+        .navigationTitle(coordinator == nil ? "Practice" : "")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(coordinator != nil)
         .onDisappear {
             coordinator?.teardown()
         }
+    }
+
+    private func compactReset(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(title, action: action)
+            .font(.system(.caption, design: .rounded).weight(.bold))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .foregroundStyle(CupClashTheme.cyan)
+            .background(Capsule().stroke(CupClashTheme.cyan.opacity(0.7), lineWidth: 1.2))
+            .accessibilityLabel(title)
     }
 }

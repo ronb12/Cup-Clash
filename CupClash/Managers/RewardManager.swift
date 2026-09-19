@@ -25,11 +25,29 @@ enum RewardCalculator {
         let winXP = playerWon && configuration.mode != .practice ? AppConstants.matchWinXP : 0
         let cupXP = playerMakes * AppConstants.madeCupXP
         let streakXP = bestStreak >= AppConstants.streakBonusThreshold ? AppConstants.streakBonusXP : 0
-        let coins: Int
-        if configuration.mode == .quickMatch, playerWon {
-            coins = configuration.difficulty.winCoins
-        } else {
-            coins = 0
+        var coins = 0
+        if configuration.mode.awardsCoins, !playerWon, configuration.mode != .challenge {
+            // Consolation so a losing streak can still fund the locker.
+            coins = min(AppConstants.consolationCoinCap, playerMakes * AppConstants.consolationCoinsPerCup)
+        }
+        if configuration.mode.awardsCoins, playerWon {
+            if configuration.mode == .challenge {
+                coins = ChallengeDefinition.rewardCoins(for: configuration.eventID)
+            } else {
+                coins = configuration.difficulty.winCoins
+                if configuration.mode == .dailyChallenge {
+                    coins += 40
+                }
+                if configuration.mode == .tournament {
+                    coins += 25
+                    if configuration.isFinalTournamentRound {
+                        coins += 75
+                    }
+                }
+                if configuration.isSuddenDeath {
+                    coins += 15
+                }
+            }
         }
 
         return RewardBreakdown(

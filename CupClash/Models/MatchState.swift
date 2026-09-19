@@ -32,6 +32,11 @@ struct MatchState: Equatable, Sendable {
 
     var totalPlayerCups: Int { configuration.cupCount.rawValue }
 
+    /// Cups still on this side's own rack (what the other player is shooting at).
+    func rackRemaining(for side: PlayerSide) -> Int {
+        cups.filter { $0.owner == side && $0.isActive }.count
+    }
+
     func remainingCups(for side: PlayerSide) -> Int {
         side == .player ? playerCupsRemaining : opponentCupsRemaining
     }

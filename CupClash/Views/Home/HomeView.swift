@@ -45,6 +45,36 @@ struct HomeView: View {
                     }
 
                     ModeCardView(
+                        title: GameMode.dailyChallenge.title,
+                        detail: dailyDetail,
+                        symbol: GameMode.dailyChallenge.symbolName,
+                        emphasized: false
+                    ) {
+                        router.start(
+                            DailyChallenge.configuration(
+                                playerName: profile.displayName,
+                                aimAssistance: settings.aimAssistanceEnabled
+                            )
+                        )
+                    }
+
+                    ModeCardView(
+                        title: GameMode.tournament.title,
+                        detail: tournamentDetail,
+                        symbol: GameMode.tournament.symbolName
+                    ) {
+                        router.push(.tournaments)
+                    }
+
+                    ModeCardView(
+                        title: GameMode.challenge.title,
+                        detail: challengeDetail,
+                        symbol: GameMode.challenge.symbolName
+                    ) {
+                        router.push(.challenges)
+                    }
+
+                    ModeCardView(
                         title: GameMode.practice.title,
                         detail: GameMode.practice.detail,
                         symbol: GameMode.practice.symbolName
@@ -53,6 +83,8 @@ struct HomeView: View {
                     }
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        miniButton("Leaderboards", symbol: "list.number") { router.push(.leaderboards) }
+                        miniButton("Achievements", symbol: "rosette") { router.push(.achievements) }
                         miniButton("Locker", symbol: "tshirt.fill") { router.push(.locker) }
                         miniButton("Profile", symbol: "person.crop.circle") { router.push(.profile) }
                         miniButton("How to Play", symbol: "questionmark.circle") { router.push(.howToPlay) }
@@ -65,6 +97,9 @@ struct HomeView: View {
                 .padding(.bottom, 28)
             }
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            Color.clear.frame(height: 0).background(.ultraThinMaterial)
+        }
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -76,6 +111,7 @@ struct HomeView: View {
             VStack(spacing: 8) {
                 Image(systemName: symbol)
                     .font(.title2)
+                    .frame(height: 28)
                 Text(title)
                     .font(.system(.subheadline, design: .rounded).weight(.semibold))
             }
@@ -88,6 +124,38 @@ struct HomeView: View {
             )
         }
         .accessibilityLabel(title)
+    }
+
+    private var dailyDetail: String {
+        let config = DailyChallenge.configuration(
+            playerName: profile.displayName,
+            aimAssistance: settings.aimAssistanceEnabled
+        )
+        let best = LocalScoreboard.shared.dailyBest()
+        let today = DailyChallenge.dayID()
+        if let best, best.day == today {
+            return "\(config.difficulty.title) • \(config.cupCount.title) • Best \(best.score)"
+        }
+        return "\(config.difficulty.title) • \(config.cupCount.title) • \(config.formation.title)"
+    }
+
+    private var tournamentDetail: String {
+        let event = TournamentEvent.current()
+        let store = TournamentStore.shared
+        if store.championThisWeek {
+            return "\(event.title) • Champion"
+        }
+        if store.eliminated {
+            return "\(event.title) • Retry opening match"
+        }
+        if let round = event.round(store.currentRound) {
+            return "\(event.title) • \(round.title)"
+        }
+        return event.title
+    }
+
+    private var challengeDetail: String {
+        "\(ChallengeStore.shared.completedCount)/\(ChallengeDefinition.all.count) cleared"
     }
 }
 

@@ -76,40 +76,42 @@ enum CupFactory {
 
     private static func addColliders(to root: Entity, id: UUID) {
         let wallCount = 8
-        let radius = (ArenaMetrics.cupTopRadius + ArenaMetrics.cupBottomRadius) * 0.52
+        let radius = ArenaMetrics.cupTopRadius * 1.04
+        let cupMaterial = PhysicsMaterialResource.generate(staticFriction: 0.48, dynamicFriction: 0.40, restitution: 0.02)
         for wall in 0..<wallCount {
             let angle = Float(wall) * (.pi * 2 / Float(wallCount))
             let collider = Entity()
             collider.name = EntityNames.wall(id)
-            collider.position = SIMD3(cos(angle) * radius, ArenaMetrics.cupHeight * 0.52, sin(angle) * radius)
+            collider.position = SIMD3(cos(angle) * radius, ArenaMetrics.cupHeight * 0.36, sin(angle) * radius)
             collider.orientation = simd_quatf(angle: -angle, axis: [0, 1, 0])
             collider.components.set(CollisionComponent(
-                shapes: [.generateBox(width: 0.013, height: ArenaMetrics.cupHeight * 0.92, depth: 0.036)],
+                shapes: [.generateBox(width: 0.008, height: ArenaMetrics.cupHeight * 0.58, depth: 0.030)],
                 mode: .default,
                 filter: CollisionGroups.cupFilter
             ))
-            collider.components.set(PhysicsBodyComponent(massProperties: .default, material: .default, mode: .kinematic))
+            collider.components.set(PhysicsBodyComponent(massProperties: .default, material: cupMaterial, mode: .kinematic))
             root.addChild(collider)
         }
 
         let bottom = Entity()
         bottom.name = EntityNames.wall(id)
-        bottom.position.y = 0.008
+        bottom.position.y = 0.007
         bottom.components.set(CollisionComponent(
-            shapes: [.generateBox(width: ArenaMetrics.cupBottomRadius * 1.6, height: 0.014, depth: ArenaMetrics.cupBottomRadius * 1.6)],
+            shapes: [.generateBox(width: ArenaMetrics.cupBottomRadius * 1.55, height: 0.012, depth: ArenaMetrics.cupBottomRadius * 1.55)],
             mode: .default,
             filter: CollisionGroups.cupFilter
         ))
-        bottom.components.set(PhysicsBodyComponent(massProperties: .default, material: .default, mode: .kinematic))
+        bottom.components.set(PhysicsBodyComponent(massProperties: .default, material: cupMaterial, mode: .kinematic))
         root.addChild(bottom)
     }
 
     private static func addTrigger(to root: Entity, id: UUID) {
         let trigger = Entity()
         trigger.name = EntityNames.trigger(id)
-        trigger.position.y = 0.046
+        trigger.position.y = 0.062
+        let mouth = ArenaMetrics.cupTopRadius * 1.7
         trigger.components.set(CollisionComponent(
-            shapes: [.generateBox(width: ArenaMetrics.cupBottomRadius * 1.15, height: 0.055, depth: ArenaMetrics.cupBottomRadius * 1.15)],
+            shapes: [.generateBox(width: mouth, height: 0.10, depth: mouth)],
             mode: .trigger,
             filter: CollisionGroups.triggerFilter
         ))

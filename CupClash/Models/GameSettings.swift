@@ -25,7 +25,7 @@ final class GameSettings {
         reducedMotion: Bool = false,
         highContrast: Bool = false,
         throwSensitivity: Double = 1.0,
-        preferredDifficultyRaw: String = AIDifficulty.pro.rawValue,
+        preferredDifficultyRaw: String = AIDifficulty.rookie.rawValue,
         preferredCupCountRaw: Int = CupCount.six.rawValue
     ) {
         self.musicEnabled = musicEnabled
@@ -42,7 +42,7 @@ final class GameSettings {
     }
 
     var preferredDifficulty: AIDifficulty {
-        get { AIDifficulty(rawValue: preferredDifficultyRaw) ?? .pro }
+        get { AIDifficulty(rawValue: preferredDifficultyRaw) ?? .rookie }
         set { preferredDifficultyRaw = newValue.rawValue }
     }
 

@@ -60,19 +60,30 @@ final class ShotEvaluator {
             return ShotEvaluation(result: nil, cupID: nil)
         }
 
-        if let cupID = triggerCup, let entered = triggerEnteredAt,
-           now.timeIntervalSince(entered) >= physics.scoreHoldDuration,
-           position.y <= ArenaMetrics.tableSurfaceY + ArenaMetrics.cupHeight * 0.85 {
-            scoredGenerations.insert(generation)
-            return ShotEvaluation(result: .made, cupID: cupID)
+        if let cupID = triggerCup {
+            let inMouth = position.y <= ArenaMetrics.tableSurfaceY + ArenaMetrics.cupHeight + 0.02
+                && position.y >= ArenaMetrics.tableSurfaceY + 0.01
+            if inMouth {
+                if speed <= physics.inCupSpeed {
+                    return finish(.made, cupID: cupID)
+                }
+                if let entered = triggerEnteredAt, now.timeIntervalSince(entered) >= physics.scoreHoldDuration {
+                    return finish(.made, cupID: cupID)
+                }
+            }
+        }
+
+        let elapsed = now.timeIntervalSince(launchedAt)
+        if elapsed < physics.scoreGraceDuration {
+            return ShotEvaluation(result: nil, cupID: nil)
         }
 
         if abs(position.x) > physics.outOfBoundsX || abs(position.z) > physics.outOfBoundsZ || position.y < physics.outOfBoundsY {
-            return ShotEvaluation(result: .outOfBounds, cupID: nil)
+            return finish(.outOfBounds, cupID: nil)
         }
 
-        if now.timeIntervalSince(launchedAt) >= physics.shotTimeout {
-            return ShotEvaluation(result: .timeout, cupID: nil)
+        if elapsed >= physics.shotTimeout {
+            return finish(.timeout, cupID: nil)
         }
 
         if speed < physics.settleSpeed && triggerCup == nil {
@@ -80,14 +91,19 @@ final class ShotEvaluator {
                 lowSpeedSince = now
             }
             if let lowSpeedSince, now.timeIntervalSince(lowSpeedSince) >= physics.settleDuration {
-                if hitRim { return ShotEvaluation(result: .rimOut, cupID: nil) }
-                if hitTable { return ShotEvaluation(result: .tableBounce, cupID: nil) }
-                return ShotEvaluation(result: .missed, cupID: nil)
+                if hitRim { return finish(.rimOut, cupID: nil) }
+                if hitTable { return finish(.tableBounce, cupID: nil) }
+                return finish(.missed, cupID: nil)
             }
         } else {
             lowSpeedSince = nil
         }
 
         return ShotEvaluation(result: nil, cupID: nil)
+    }
+
+    private func finish(_ result: ShotResult, cupID: UUID?) -> ShotEvaluation {
+        scoredGenerations.insert(generation)
+        return ShotEvaluation(result: result, cupID: cupID)
     }
 }

@@ -9,6 +9,8 @@ enum AppConstants {
     static let matchCompleteXP = 25
     static let matchWinXP = 75
     static let madeCupXP = 5
+    static let consolationCoinsPerCup = 3
+    static let consolationCoinCap = 20
     static let streakBonusXP = 15
     static let streakBonusThreshold = 3
     static let levelUpCoins = 50
@@ -49,6 +51,11 @@ enum GameCenterIDs {
     static let bestAccuracy = "\(leaderboardPrefix).best_accuracy"
     static let longestWinStreak = "\(leaderboardPrefix).longest_win_streak"
     static let mostCupsMade = "\(leaderboardPrefix).most_cups_made"
+    static let dailyChallenge = "\(leaderboardPrefix).daily_challenge"
+    static let suddenDeathWins = "\(leaderboardPrefix).sudden_death_wins"
+    static let tournamentTitles = "\(leaderboardPrefix).tournament_titles"
+    static let challengesCleared = "\(leaderboardPrefix).challenges_cleared"
+    static let weeklyTournament = "\(leaderboardPrefix).weekly_tournament"
 
     static let firstCup = "\(achievementPrefix).first_cup"
     static let firstVictory = "\(achievementPrefix).first_victory"
@@ -58,4 +65,8 @@ enum GameCenterIDs {
     static let threeInARow = "\(achievementPrefix).three_in_a_row"
     static let championDefeated = "\(achievementPrefix).champion_defeated"
     static let collector = "\(achievementPrefix).collector"
+    static let dailyChallenger = "\(achievementPrefix).daily_challenger"
+    static let clutchFinish = "\(achievementPrefix).clutch_finish"
+    static let tournamentChampion = "\(achievementPrefix).tournament_champion"
+    static let challengeHunter = "\(achievementPrefix).challenge_hunter"
 }

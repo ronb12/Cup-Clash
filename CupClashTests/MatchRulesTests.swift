@@ -83,6 +83,36 @@ final class MatchRulesTests: XCTestCase {
         XCTAssertFalse(rules.state.awaitingPassReady)
     }
 
+    @MainActor
+    func testShotEvaluatorReportsAMissOnlyOnce() {
+        let evaluator = ShotEvaluator(physics: .playable)
+        evaluator.beginShot(generation: 7)
+        evaluator.noteTableHit()
+        let still = SIMD3<Float>(0, ArenaMetrics.tableSurfaceY + 0.02, 0)
+        let start = Date()
+        _ = evaluator.evaluate(position: still, speed: 0, now: start.addingTimeInterval(0.25))
+        let first = evaluator.evaluate(position: still, speed: 0, now: start.addingTimeInterval(0.72))
+        let second = evaluator.evaluate(position: still, speed: 0, now: start.addingTimeInterval(0.82))
+        XCTAssertEqual(first.result, .tableBounce)
+        XCTAssertNil(second.result)
+    }
+
+    @MainActor
+    func testBallInsideCupCountsAsAMake() {
+        let evaluator = ShotEvaluator(physics: .playable)
+        evaluator.beginShot(generation: 3)
+        let cupID = UUID()
+        evaluator.enterTrigger(cupID: cupID)
+        let inside = SIMD3<Float>(
+            0,
+            ArenaMetrics.tableSurfaceY + ArenaMetrics.cupHeight * 0.45,
+            -1.0
+        )
+        let made = evaluator.evaluate(position: inside, speed: 0.2)
+        XCTAssertEqual(made.result, .made)
+        XCTAssertEqual(made.cupID, cupID)
+    }
+
     func testRerackOnlyOnceWhenThreeRemain() {
         var rules = engine()
         let own = rules.state.cups.indices.filter { rules.state.cups[$0].owner == .player }

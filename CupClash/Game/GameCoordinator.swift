@@ -19,7 +19,7 @@ final class GameCoordinator {
     let throwInput = ThrowInputController()
     private(set) var rules: MatchRulesEngine
     private(set) var phase: GamePhase = .loading
-    private(set) var feedback: String = "Drag back to throw"
+    private(set) var feedback: String = "Drag to aim, then tap Throw"
     private(set) var isPaused = false
     private(set) var result: MatchResult?
     private(set) var showSettings = false
@@ -33,7 +33,10 @@ final class GameCoordinator {
     private var resolveTask: Task<Void, Never>?
     private var rewardsApplied = false
     private var configuredScene = false
-    private var inputEnabledAt = Date.distantPast
+    private var inputArmTask: Task<Void, Never>?
+    private(set) var throwInputArmed = false
+    private(set) var cameraReady = true
+    private var cameraReadyTask: Task<Void, Never>?
 
     init(configuration: MatchConfiguration, settings: GameSettings, profile: PlayerProfile) {
         self.configuration = configuration
@@ -44,11 +47,11 @@ final class GameCoordinator {
 
     var state: MatchState { rules.state }
     var canThrow: Bool {
-        phase == .aiming && !isPaused && !scene.isBallInFlight && activeHumanCanAct && Date() >= inputEnabledAt
+        phase == .aiming && !isPaused && !scene.isBallInFlight && activeHumanCanAct && throwInputArmed && cameraReady
     }
 
     var activeHumanCanAct: Bool {
-        if configuration.mode == .quickMatch {
+        if configuration.mode.usesAI {
             return state.activeSide == .player
         }
         return true
@@ -59,7 +62,13 @@ final class GameCoordinator {
     }
 
     func start() {
-        guard !configuredScene else { return }
+        _ = scene.ensureView()
+        guard !configuredScene else {
+            if phase == .aiming && !throwInputArmed {
+                armThrowInput()
+            }
+            return
+        }
         configuredScene = true
         scene.configure(
             cups: state.cups,
@@ -91,13 +100,13 @@ final class GameCoordinator {
             sensitivity: settings.clampedSensitivity,
             leftHanded: settings.leftHandedControls
         )
-        scene.updateAim(
-            aim: throwInput.aim,
-            power: throwInput.power,
-            showTrajectory: settings.trajectoryGuideEnabled,
-            reducedMotion: settings.reducedMotion,
-            aimAssistX: assistedCupX()
-        )
+        refreshAimPreview()
+    }
+
+    func lockAim() {
+        throwInput.endDrag()
+        guard canThrow else { return }
+        refreshAimPreview()
     }
 
     func releaseThrow() {
@@ -106,14 +115,14 @@ final class GameCoordinator {
             return
         }
         guard let launch = throwInput.commit(minimumPower: scene.physics.minLaunchPower) else {
-            scene.updateAim(aim: 0, power: 0, showTrajectory: false, reducedMotion: settings.reducedMotion, aimAssistX: nil)
+            scene.updateAim(aim: 0, power: 0, showTrajectory: false, reducedMotion: settings.reducedMotion, snapToCups: false)
             return
         }
         phase = .inFlight
         feedback = "Ball in play"
         AudioManager.shared.play(.throwRelease)
         HapticManager.shared.throwRelease()
-        scene.launch(aim: launch.aim, power: launch.power, aimAssistX: assistedCupX())
+        scene.launch(aim: launch.aim, power: launch.power, snapToCups: aimAssistEnabled)
     }
 
     func togglePause() {
@@ -148,7 +157,8 @@ final class GameCoordinator {
         phase = .aiming
         feedback = "New match"
         scene.rebuildCups(state.cups)
-        scene.setActiveSide(.player)
+        scene.snapToSide(.player)
+        cameraReady = true
         armThrowInput()
         maybeStartAITurn()
     }
@@ -163,12 +173,30 @@ final class GameCoordinator {
 
     func acknowledgePass() {
         rules.acknowledgePassReady()
-        scene.setActiveSide(state.activeSide)
+        moveCameraToActiveSide()
         phase = .aiming
         feedback = "\(currentPlayerName)'s throw"
         AudioManager.shared.play(.turn)
         HapticManager.shared.turn()
         armThrowInput()
+    }
+
+    private func moveCameraToActiveSide() {
+        let side = configuration.mode == .practice ? .player : state.activeSide
+        scene.setActiveSide(side)
+        cameraReady = !scene.cameraIsTraveling
+        cameraReadyTask?.cancel()
+        guard !cameraReady else { return }
+        cameraReadyTask = Task { [weak self] in
+            while let self, self.scene.cameraIsTraveling, !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(40))
+            }
+            guard let self, !Task.isCancelled else { return }
+            self.cameraReady = true
+        }
+        if configuration.mode != .practice {
+            AudioManager.shared.play(.turn)
+        }
     }
 
     func resetPracticeBall() {
@@ -187,20 +215,73 @@ final class GameCoordinator {
         feedback = "Cups reset"
     }
 
+    func nudgeAim(_ delta: Float) {
+        guard canThrow else { return }
+        throwInput.nudgeAim(by: delta)
+        refreshAimPreview()
+    }
+
+    func throwStraight() {
+        guard canThrow else { return }
+        let aim = throwInput.aim
+        let stored = throwInput.power
+        let usedPower: Float
+        if stored >= scene.physics.minLaunchPower {
+            usedPower = stored
+        } else if stored > 0 {
+            usedPower = scene.physics.minLaunchPower
+        } else {
+            feedback = "Pull back to set power"
+            return
+        }
+        throwInput.reset()
+        phase = .inFlight
+        feedback = "Ball in play"
+        AudioManager.shared.play(.throwRelease)
+        HapticManager.shared.throwRelease()
+        scene.launch(aim: aim, power: usedPower, snapToCups: aimAssistEnabled)
+    }
+
+    private func refreshAimPreview() {
+        scene.updateAim(
+            aim: throwInput.aim,
+            power: launchPower(stored: throwInput.power, fallback: 0.55),
+            showTrajectory: settings.trajectoryGuideEnabled,
+            reducedMotion: settings.reducedMotion,
+            snapToCups: aimAssistEnabled
+        )
+    }
+
+    private func launchPower(stored: Float, fallback: Float) -> Float {
+        if stored >= scene.physics.minLaunchPower {
+            return stored
+        }
+        return max(fallback, scene.physics.minLaunchPower)
+    }
+
     func teardown() {
         aiTask?.cancel()
         resolveTask?.cancel()
+        inputArmTask?.cancel()
+        cameraReadyTask?.cancel()
+        throwInputArmed = false
+        configuredScene = false
         scene.cancelAndTeardown()
     }
 
     private func armThrowInput() {
-        inputEnabledAt = Date().addingTimeInterval(0.4)
+        throwInputArmed = false
+        inputArmTask?.cancel()
+        inputArmTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard let self, !Task.isCancelled else { return }
+            self.throwInputArmed = true
+        }
     }
 
-    private func assistedCupX() -> Float? {
-        guard settings.aimAssistanceEnabled || configuration.aimAssistance else { return nil }
-        let targets = state.cups.filter { $0.owner == state.activeSide.opposite && $0.isActive }
-        return targets.min(by: { abs($0.worldPosition.x) < abs($1.worldPosition.x) })?.worldPosition.x
+    private var aimAssistEnabled: Bool {
+        if configuration.lockAimAssistOff { return false }
+        return configuration.aimAssistance
     }
 
     private func handleCollision(_ fx: GameSceneController.CollisionFX) {
@@ -216,6 +297,7 @@ final class GameCoordinator {
 
     private func handleResolvedShot(_ shot: ShotResult, cupID: UUID?) {
         phase = .resolving
+        let wasRivalThrow = configuration.mode.usesAI && state.activeSide == .opponent
         let resolution = rules.registerShot(shot, cupID: cupID)
         if let scored = resolution.scoredCupID {
             scene.removeCup(id: scored, animated: true, reducedMotion: settings.reducedMotion)
@@ -225,7 +307,7 @@ final class GameCoordinator {
         } else {
             AudioManager.shared.play(.miss)
             HapticManager.shared.miss()
-            feedback = shot.spokenLabel
+            feedback = wasRivalThrow ? shot.spokenLabel : (scene.lastMissHint ?? shot.spokenLabel)
         }
 
         if resolution.matchFinished {
@@ -233,16 +315,22 @@ final class GameCoordinator {
             return
         }
 
+        if resolution.shouldOfferPassOverlay {
+            resolveTask?.cancel()
+            resolveTask = Task { [weak self] in
+                try? await Task.sleep(for: .milliseconds(500))
+                guard let self, !Task.isCancelled else { return }
+                self.phase = .passOverlay
+                self.feedback = "Pass the device"
+            }
+            return
+        }
+
+        moveCameraToActiveSide()
         resolveTask?.cancel()
         resolveTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(650))
             guard let self, !Task.isCancelled else { return }
-            if resolution.shouldOfferPassOverlay {
-                self.phase = .passOverlay
-                self.feedback = "Pass the device"
-                return
-            }
-            self.scene.setActiveSide(self.state.activeSide)
             self.phase = .aiming
             self.feedback = "\(self.currentPlayerName)'s throw"
             self.armThrowInput()
@@ -251,7 +339,7 @@ final class GameCoordinator {
     }
 
     private func maybeStartAITurn() {
-        guard configuration.mode == .quickMatch,
+        guard configuration.mode.usesAI,
               state.activeSide == .opponent,
               !state.isFinished,
               !isPaused else { return }
@@ -311,8 +399,20 @@ final class GameCoordinator {
             if matchResult.perfectGame {
                 GameCenterManager.shared.reportAchievement(id: GameCenterIDs.perfectMatch, percent: 100)
             }
-            if playerWon && configuration.difficulty == .champion && configuration.mode == .quickMatch {
+            if playerWon && configuration.difficulty == .champion && configuration.mode.usesAI {
                 GameCenterManager.shared.reportAchievement(id: GameCenterIDs.championDefeated, percent: 100)
+            }
+            if playerWon && configuration.mode == .dailyChallenge {
+                GameCenterManager.shared.reportAchievement(id: GameCenterIDs.dailyChallenger, percent: 100)
+            }
+            if playerWon && configuration.isSuddenDeath {
+                GameCenterManager.shared.reportAchievement(id: GameCenterIDs.clutchFinish, percent: 100)
+            }
+            if playerWon && configuration.isFinalTournamentRound {
+                GameCenterManager.shared.reportAchievement(id: GameCenterIDs.tournamentChampion, percent: 100)
+            }
+            if ChallengeStore.shared.completedCount >= 4 {
+                GameCenterManager.shared.reportAchievement(id: GameCenterIDs.challengeHunter, percent: 100)
             }
         }
         AudioManager.shared.play(playerWon ? .victory : .defeat)

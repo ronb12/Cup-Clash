@@ -13,7 +13,16 @@ struct GameplayView: View {
         ZStack {
             ScreenBackground(highContrast: settings.highContrast)
             if let coordinator {
-                CupClashGameView(coordinator: coordinator)
+                CupClashGameView(coordinator: coordinator, bottomInset: 150)
+                    .id(configuration.seed)
+                VStack(spacing: 0) {
+                    Spacer()
+                    LinearGradient(colors: [.clear, CupClashTheme.navy.opacity(0.9)], startPoint: .top, endPoint: .bottom)
+                        .frame(height: 36)
+                }
+                .padding(.bottom, 150)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
                 GameplayHUD(
                     coordinator: coordinator,
                     onPause: coordinator.togglePause,
@@ -43,10 +52,8 @@ struct GameplayView: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
-        .onAppear {
-            if coordinator == nil {
-                coordinator = GameCoordinator(configuration: configuration, settings: settings, profile: profile)
-            }
+        .task(id: configuration.seed) {
+            bootMatch()
         }
         .onChange(of: coordinator?.phase) { _, phase in
             if phase == .finished, let result = coordinator?.result {
@@ -62,6 +69,17 @@ struct GameplayView: View {
         .sheet(isPresented: $showHelp) {
             HowToPlayView()
         }
+    }
+
+    private func bootMatch() {
+        if let current = coordinator, current.configuration.seed == configuration.seed {
+            current.start()
+            return
+        }
+        coordinator?.teardown()
+        let fresh = GameCoordinator(configuration: configuration, settings: settings, profile: profile)
+        coordinator = fresh
+        fresh.start()
     }
 
     private func passOverlay(_ coordinator: GameCoordinator) -> some View {

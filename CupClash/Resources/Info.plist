@@ -30,6 +30,8 @@
 	<dict>
 		<key>UIColorName</key>
 		<string>LaunchBackground</string>
+		<key>UIImageName</key>
+		<string>SplashIcon</string>
 	</dict>
 	<key>UIRequiresFullScreen</key>
 	<true/>
@@ -44,5 +46,7 @@
 	</array>
 	<key>GCSupportsGameCenter</key>
 	<true/>
+	<key>NSGKFriendListUsageDescription</key>
+	<string>Cup Clash uses your Game Center friends so you can send friend invites and compare tournament and challenge ranks.</string>
 </dict>
 </plist>

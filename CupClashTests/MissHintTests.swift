@@ -63,12 +63,13 @@ final class AimAssistPolicyTests: XCTestCase {
         XCTAssertFalse(AimAssistPolicy.defaultEnabled(for: .champion))
     }
 
-    func testChampionNeverAllowsAssist() {
+    func testProAndChampionNeverAllowAssist() {
         XCTAssertFalse(config(.quickMatch, .champion).aimAssistActive)
+        XCTAssertFalse(config(.quickMatch, .pro).aimAssistActive)
+        XCTAssertFalse(config(.challenge, .pro).aimAssistActive)
     }
 
-    func testProAndRookieQuickMatchesAllowAssistWhenRequested() {
-        XCTAssertTrue(config(.quickMatch, .pro).aimAssistActive)
+    func testRookieAllowsAssistWhenRequested() {
         XCTAssertTrue(config(.quickMatch, .rookie).aimAssistActive)
     }
 

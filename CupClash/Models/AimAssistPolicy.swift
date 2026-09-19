@@ -2,7 +2,7 @@ import Foundation
 
 /// Decides where aim assistance may be used, so results stay fair and comparable.
 enum AimAssistPolicy {
-    /// Assist is a learning aid: on by default only for Rookie.
+    /// Assist is a learning aid, available only against Rookie (on by default there).
     static func defaultEnabled(for difficulty: AIDifficulty) -> Bool {
         difficulty == .rookie
     }
@@ -16,7 +16,7 @@ enum AimAssistPolicy {
         default:
             break
         }
-        if mode.usesAI && difficulty == .champion { return false }
+        if mode.usesAI && difficulty != .rookie { return false } // Pro and Champion are unassisted
         return true
     }
 
@@ -26,7 +26,10 @@ enum AimAssistPolicy {
         case .tournament, .dailyChallenge:
             return "Aim assistance is off in ranked play so scores stay comparable."
         default:
-            return difficulty == .champion ? "Aim assistance isn't available against Champion." : "Aim assistance is off for this challenge."
+            if mode.usesAI && difficulty != .rookie {
+                return "Aim assistance is only available against Rookie."
+            }
+            return "Aim assistance is off for this challenge."
         }
     }
 }

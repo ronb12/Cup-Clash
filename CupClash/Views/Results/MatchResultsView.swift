@@ -30,6 +30,9 @@ struct MatchResultsView: View {
                             stat("Rival shots", "\(result.opponentMakes)/\(result.opponentShots)")
                             stat("Accuracy", AccuracyMath.formatted(made: result.playerMakes, attempted: result.playerShots))
                             stat("Best streak", "\(result.bestStreak)")
+                            if result.configuration.aimAssistActive {
+                                stat("Aim assist", "On")
+                            }
                         }
                     }
                     .opacity(appeared ? 1 : 0)

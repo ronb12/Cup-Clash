@@ -11,6 +11,7 @@
 		016E768E1C161FF662218218 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BAF08DCCD51E6F22B5F78A8C /* AVFoundation.framework */; };
 		04DA84EF05F144F8906E41BB /* TableFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A96420AD01794D998682DFD7 /* TableFactory.swift */; };
 		0631B35B81718FDB4AA4FE16 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D657A83AC2161CD19ADDD33E /* HapticManager.swift */; };
+		08BE6A9AE5B68497FE2F9089 /* AimAssistPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09F473CCA4D409F02D02E2B4 /* AimAssistPolicy.swift */; };
 		0B04F16C677ECE147409A866 /* CupFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B74630B560DA98B2B9431F00 /* CupFactory.swift */; };
 		0B55B2E3C43A6530203143F5 /* Tournament.swift in Sources */ = {isa = PBXBuildFile; fileRef = D03EBBC69EC24043BBCB7F54 /* Tournament.swift */; };
 		0CEF18B460AEF8F3DEDAC870 /* WinnerCelebrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9394D5413254E5771A88AB1E /* WinnerCelebrationView.swift */; };
@@ -143,6 +144,7 @@
 		03C8B2A871A0358F2E183797 /* GameKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameKit.framework; path = System/Library/Frameworks/GameKit.framework; sourceTree = SDKROOT; };
 		040F5D2944150F8468543EE3 /* CareerFeaturesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerFeaturesTests.swift; sourceTree = "<group>"; };
 		06A1CD16784609DD0AF00719 /* AchievementDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementDefinition.swift; sourceTree = "<group>"; };
+		09F473CCA4D409F02D02E2B4 /* AimAssistPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AimAssistPolicy.swift; sourceTree = "<group>"; };
 		0B369A196C21A5B8D0F824D2 /* GameplayHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameplayHUD.swift; sourceTree = "<group>"; };
 		0C6B978A7B6A84E15CDA1544 /* sfx_levelup.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_levelup.wav; sourceTree = "<group>"; };
 		11A422B8F47DCEA4D50CFF97 /* LeaderboardsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardsView.swift; sourceTree = "<group>"; };
@@ -458,6 +460,7 @@
 			isa = PBXGroup;
 			children = (
 				06A1CD16784609DD0AF00719 /* AchievementDefinition.swift */,
+				09F473CCA4D409F02D02E2B4 /* AimAssistPolicy.swift */,
 				9CA18061AD7BE008A2A7B7E0 /* ArenaStyle.swift */,
 				301B86B7A4ABA670726AF102 /* BallStyle.swift */,
 				F22CABB23A7B7D3B0636960B /* ChallengeDefinition.swift */,
@@ -713,6 +716,7 @@
 				66830270E050B957164709F9 /* AIPlayerController.swift in Sources */,
 				8535724EF40EDE98BA0B80BC /* AchievementDefinition.swift in Sources */,
 				32E4E467AABECAA4AE2CFD6B /* AchievementsView.swift in Sources */,
+				08BE6A9AE5B68497FE2F9089 /* AimAssistPolicy.swift in Sources */,
 				7B0C1D4B54C1FDA50098FBED /* AimPowerControl.swift in Sources */,
 				2E659A24394128833EA81B6A /* AppConstants.swift in Sources */,
 				6D0CD6C5F7420DA46120F4F4 /* AppRouter.swift in Sources */,

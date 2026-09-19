@@ -48,3 +48,47 @@ final class MissHintTests: XCTestCase {
         XCTAssertFalse(TrajectoryCalculator.isOnTarget(landing: SIMD3(0.2, 0.9, -0.9), cups: cups))
     }
 }
+
+final class AimAssistPolicyTests: XCTestCase {
+    private func config(_ mode: GameMode, _ level: AIDifficulty, locked: Bool = false) -> MatchConfiguration {
+        var c = MatchConfiguration.quickMatch(difficulty: level, cupCount: .six, aimAssistance: true, playerName: "Sam")
+        c.mode = mode
+        c.lockAimAssistOff = locked
+        return c
+    }
+
+    func testOnlyRookieDefaultsToAssist() {
+        XCTAssertTrue(AimAssistPolicy.defaultEnabled(for: .rookie))
+        XCTAssertFalse(AimAssistPolicy.defaultEnabled(for: .pro))
+        XCTAssertFalse(AimAssistPolicy.defaultEnabled(for: .champion))
+    }
+
+    func testChampionNeverAllowsAssist() {
+        XCTAssertFalse(config(.quickMatch, .champion).aimAssistActive)
+    }
+
+    func testProAndRookieQuickMatchesAllowAssistWhenRequested() {
+        XCTAssertTrue(config(.quickMatch, .pro).aimAssistActive)
+        XCTAssertTrue(config(.quickMatch, .rookie).aimAssistActive)
+    }
+
+    func testRankedModesLockAssistOff() {
+        XCTAssertFalse(config(.tournament, .rookie).aimAssistActive)
+        XCTAssertFalse(config(.dailyChallenge, .rookie).aimAssistActive)
+    }
+
+    func testChallengeLockIsRespected() {
+        XCTAssertFalse(config(.challenge, .rookie, locked: true).aimAssistActive)
+        XCTAssertTrue(config(.challenge, .rookie, locked: false).aimAssistActive)
+    }
+
+    func testRequestedOffStaysOffEvenWhenAllowed() {
+        var c = config(.quickMatch, .rookie)
+        c.aimAssistance = false
+        XCTAssertFalse(c.aimAssistActive)
+    }
+
+    func testPassAndPlayIgnoresDifficulty() {
+        XCTAssertTrue(config(.passAndPlay, .champion).aimAssistActive)
+    }
+}

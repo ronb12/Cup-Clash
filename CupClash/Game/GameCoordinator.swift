@@ -280,8 +280,7 @@ final class GameCoordinator {
     }
 
     private var aimAssistEnabled: Bool {
-        if configuration.lockAimAssistOff { return false }
-        return configuration.aimAssistance
+        configuration.aimAssistActive
     }
 
     private func handleCollision(_ fx: GameSceneController.CollisionFX) {

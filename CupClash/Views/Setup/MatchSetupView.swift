@@ -9,6 +9,10 @@ struct MatchSetupView: View {
     @State private var cupCount: CupCount = .six
     @State private var formation: CupFormation = .triangle
     @State private var aimAssist = true
+
+    private var assistAllowed: Bool {
+        AimAssistPolicy.isAllowed(mode: mode, difficulty: difficulty, lockedOff: false)
+    }
     @State private var suddenDeath = false
 
     var body: some View {
@@ -48,9 +52,21 @@ struct MatchSetupView: View {
                     }
 
                     GlassPanel {
-                        Toggle("Aim assistance", isOn: $aimAssist)
-                            .tint(CupClashTheme.cyan)
-                            .font(.system(.headline, design: .rounded))
+                        VStack(alignment: .leading, spacing: 6) {
+                            Toggle("Aim assistance", isOn: $aimAssist)
+                                .tint(CupClashTheme.cyan)
+                                .font(.system(.headline, design: .rounded))
+                                .disabled(!assistAllowed)
+                            if !assistAllowed {
+                                Text(AimAssistPolicy.lockedReason(mode: mode, difficulty: difficulty))
+                                    .font(.footnote)
+                                    .foregroundStyle(CupClashTheme.textSecondary)
+                            } else if mode.usesAI {
+                                Text("Helps beginners. Turn it off for a real challenge.")
+                                    .font(.footnote)
+                                    .foregroundStyle(CupClashTheme.textSecondary)
+                            }
+                        }
                     }
 
                     PrimaryButton(title: "Start Match", symbol: "play.fill") {
@@ -65,7 +81,10 @@ struct MatchSetupView: View {
         .onAppear {
             difficulty = settings.preferredDifficulty
             cupCount = settings.preferredCupCount
-            aimAssist = settings.aimAssistanceEnabled
+            aimAssist = AimAssistPolicy.defaultEnabled(for: difficulty)
+        }
+        .onChange(of: difficulty) { _, level in
+            aimAssist = AimAssistPolicy.defaultEnabled(for: level)
         }
     }
 
@@ -75,7 +94,7 @@ struct MatchSetupView: View {
             difficulty: difficulty,
             cupCount: cupCount,
             formation: formation,
-            aimAssistance: aimAssist,
+            aimAssistance: aimAssist && assistAllowed,
             playerName: mode == .passAndPlay ? "Player One" : profile.displayName,
             opponentName: mode == .passAndPlay ? "Player Two" : difficulty.title,
             movingTargets: false,

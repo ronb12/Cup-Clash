@@ -27,7 +27,7 @@ struct SettingsView: View {
                             SectionHeader(title: "Gameplay")
                             Toggle("Trajectory guide", isOn: $settings.trajectoryGuideEnabled)
                             Toggle("Aim assistance", isOn: $settings.aimAssistanceEnabled)
-                            Text("Slight pull toward a nearby cup. Leave off for a real challenge.")
+                            Text("Used for challenges and pass & play. Match setup picks it per level: on for Rookie, off for Pro, never on Champion, tournaments or daily.")
                                 .font(.footnote)
                                 .foregroundStyle(CupClashTheme.textSecondary)
                             Toggle("Left-handed controls", isOn: $settings.leftHandedControls)

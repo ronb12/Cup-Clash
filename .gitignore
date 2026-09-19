@@ -13,3 +13,6 @@ build/
 timeline.xctimeline
 playground.xcworkspace
 .swiftpm/
+
+# App Store review contact details (personal); keep local only
+fastlane/metadata/review_information/
